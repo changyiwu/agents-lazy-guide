@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "updated": "2026-08-02",
+  "description": "四個 AI Agent 的懶人包差異表。這是整個 repo 唯一記錄 agent 差異的地方，其餘文件一律通用。",
+
+  "repoRules": {
+    "entryFile": "INSTALL.md",
+    "whyNotSkillMd": "根目錄若存在 SKILL.md，npx skills 會把整個 repo 視為單一 Skill，導致 skills/ 底下的項目無法被列出。入口因此固定使用 INSTALL.md。",
+    "sourceSkillName": "skills/<編號-slug>/SKILL.md 的 frontmatter name 一律寫不帶前綴的 slug（例如 github）。安裝時由 scripts/install.ps1 改寫成 <prefix><slug>。"
+  },
+
+  "topics": [
+    {
+      "no": "00",
+      "slug": "env-setup",
+      "title": "環境建置",
+      "guide": "guides/00-環境建置.md",
+      "skillDir": "skills/00-env-setup",
+      "status": "已完成"
+    },
+    {
+      "no": "01",
+      "slug": "gemini-notebook",
+      "title": "連接 Gemini Notebook",
+      "guide": "guides/01-連接-Gemini-Notebook.md",
+      "skillDir": "skills/01-gemini-notebook",
+      "status": "已完成"
+    },
+    {
+      "no": "02",
+      "slug": "github",
+      "title": "連接 GitHub",
+      "guide": "guides/02-連接-GitHub.md",
+      "skillDir": "skills/02-github",
+      "status": "已完成"
+    },
+    {
+      "no": "03",
+      "slug": "obsidian",
+      "title": "連接 Obsidian 第二大腦",
+      "guide": "guides/03-連接-Obsidian.md",
+      "skillDir": "skills/03-obsidian",
+      "status": "已完成"
+    },
+    {
+      "no": "04",
+      "slug": "firebase",
+      "title": "連接 Firebase 資料庫",
+      "guide": "guides/04-連接-Firebase.md",
+      "skillDir": "skills/04-firebase",
+      "status": "已完成"
+    },
+    {
+      "no": "05",
+      "slug": "draw",
+      "title": "生圖",
+      "guide": "guides/05-生圖.md",
+      "skillDir": "skills/05-draw",
+      "status": "已完成"
+    },
+    {
+      "no": "--",
+      "slug": "install-all",
+      "title": "一次安裝全部",
+      "guide": null,
+      "skillDir": "skills/install-all",
+      "status": "已完成"
+    }
+  ],
+
+  "agents": {
+    "claude": {
+      "displayName": "Claude Code",
+      "detectDir": "~/.claude",
+      "skillsDir": "~/.claude/skills",
+      "prefix": "claude-",
+      "nativeInstall": "npx skills add . --skill <skill> -g -y",
+      "notes": [
+        "所有操作預設在 Claude Code 桌面版的 Code 分頁內完成，使用者不需另開 PowerShell。",
+        "舊 repo 的 --skill 傳的是帶編號的資料夾名（02-github），與其他三個 agent 不一致；本 repo 統一傳 slug。"
+      ]
+    },
+    "codex": {
+      "displayName": "Codex",
+      "detectDir": "~/.agents",
+      "skillsDir": "~/.agents/skills",
+      "prefix": "codex-",
+      "nativeInstall": "npx skills add . --skill <skill> --full-depth --agent codex -g -y",
+      "notes": [
+        "只使用本地 repo 當安裝來源，不得改用 GitHub URL 或內建 skill-installer 的 GitHub helper。",
+        "--full-depth 在根目錄有 SKILL.md 時不可省略；本 repo 入口改為 INSTALL.md 後已無此限制，保留參數仍安全。",
+        "GitHub CLI 與 GitHub App（connector）是兩條不同連線，見 guides/02-連接-GitHub.md。"
+      ]
+    },
+    "opencode": {
+      "displayName": "OpenCode",
+      "detectDir": "~/.config/opencode",
+      "skillsDir": "~/.config/opencode/skills",
+      "prefix": "opencode-",
+      "nativeInstall": "npx skills add . --skill <skill> --agent opencode --global --copy --yes",
+      "notes": [
+        "舊 repo 的 npx 來源指向 mathruffian-dot/opencode-lazy-packs（原作者），合併後已改為本地 repo。",
+        "gh auth login 等互動式登入需由使用者在互動式終端完成。",
+        "安裝後不得在 ~/.agents/skills/ 留下 opencode-* 副本。"
+      ]
+    },
+    "antigravity": {
+      "displayName": "Antigravity",
+      "detectDir": "~/.gemini",
+      "skillsDir": "~/.gemini/config/skills",
+      "prefix": "antigravity-",
+      "nativeInstall": "scripts/install-skills.ps1 -Skill <prefix><skill>",
+      "notes": [
+        "舊 repo 沒有 00 環境建置，編號順序也不同（03 Firebase / 04 生圖 / 05 Obsidian）；本 repo 一律使用 00–05 標準編號。",
+        "Antigravity 內建生圖能力，05 生圖的外部 API 設定對它為選用。",
+        "預設只做唯讀驗收，建立／刪除遠端資源需另外取得授權。"
+      ]
+    }
+  },
+
+  "rollout": {
+    "decision": "六個主題全部搬移完成前，不安裝到任何 agent 的全域目錄。",
+    "reason": "合併版的技能名稱與舊 repo 已安裝的完全同名（claude-github 等），安裝即原地覆蓋。等全部搬完再一次切換，避免出現「02 是合併版、其他五個是舊版」的混用期。",
+    "decidedOn": "2026-08-02",
+    "thenRun": "scripts/install.ps1 -Agent all -Force"
+  },
+
+  "legacyRepos": {
+    "note": "舊 repo 不刪除，README 改為指向本 repo 的 stub。claude-code-lazy-packs 為公開 repo，直接刪除會斷他人連結。",
+    "paths": [
+      "../claude-code-lazy-packs",
+      "../codex-lazy-packs",
+      "../opencode-lazy-packs",
+      "../antigravity-lazy-pack"
+    ],
+    "attribution": "本專案改編自 三師爸（宋睿偉）的 claude-code-lazy-packs（MIT）。致謝須保留於 README.md。"
+  }
+}
