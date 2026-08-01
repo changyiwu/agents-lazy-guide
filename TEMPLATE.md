@@ -18,7 +18,7 @@ tags:
 
 發現內容因 agent 而異時，依序考慮：
 
-1. **能不能用 `agents.json` 表達？**（目錄、前綴、安裝指令）→ 寫進 `agents.json`
+1. **能不能用 `agents.json` 表達？**（技能目錄、安裝指令、探索路徑）→ 寫進 `agents.json`
 2. **是不是操作上的小差異？** → 寫進該篇的「依你的 Agent」表格
 3. **真的完全不適用某個 agent？** → 在 `agents.json` 該 agent 的 `notes` 說明
 
@@ -85,13 +85,17 @@ tags:
 
 ```yaml
 ---
-name: <slug>          # ★ 不帶前綴。安裝時由 scripts/install.ps1 改寫
+name: <slug>          # ★ 不帶 agent 前綴，四個 agent 裝出來同名
 description: <觸發語句>。說「XXX」時載入。
 ---
 ```
 
-> `name` 寫 `github`，**不要**寫 `claude-github`。前綴由安裝腳本產生 —— 這是整個 repo
-> 能「維護一份」的關鍵。description 也不要提到特定 agent 名稱。
+> `name` 寫 `github`，**不要**寫 `claude-github`。`name` 必須與資料夾名一致
+> （OpenCode 硬性要求，其他三家也相容）。description 也不要提到特定 agent 名稱。
+>
+> **為什麼不用前綴**：四個 agent 的全域目錄各自獨立不會撞名；而 OpenCode 會同時掃描
+> `~/.claude/skills` 與 `~/.agents/skills`，用前綴會讓同一主題出現三份不同名的技能，
+> 同名則會被自動去重。詳見 `agents.json` 的 `skillDiscovery`。
 
 ### 必備區塊
 
@@ -172,7 +176,7 @@ Windows / macOS / Linux 用明確標題區分，或在步驟零要求 agent 判�
 ## 新增一個主題的檢查清單
 
 - [ ] `guides/<編號>-<標題>.md` 已建立，區塊齊全
-- [ ] `skills/<編號>-<slug>/SKILL.md` 已建立，`name` 不帶前綴
+- [ ] `skills/<編號>-<slug>/SKILL.md` 已建立，`name` 為不帶前綴的 slug
 - [ ] `agents.json` 的 `topics` 已加入該主題，`status` 正確
 - [ ] `README.md` 與 `INSTALL.md` 的清單已更新
 - [ ] `scripts/install.ps1 -Agent all -ListOnly` 看得到該主題

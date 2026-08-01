@@ -11,12 +11,14 @@
 
 讀取 `agents.json`，依你自己是哪一個 agent 取得對應設定：
 
-| Agent | 全域技能目錄 | 前綴 |
-|---|---|---|
-| Claude Code | `~/.claude/skills/` | `claude-` |
-| Codex | `~/.agents/skills/` | `codex-` |
-| OpenCode | `~/.config/opencode/skills/` | `opencode-` |
-| Antigravity | `~/.gemini/config/skills/` | `antigravity-` |
+| Agent | 全域技能目錄 |
+|---|---|
+| Claude Code | `~/.claude/skills/` |
+| Codex | `~/.agents/skills/` |
+| OpenCode | `~/.config/opencode/skills/` |
+| Antigravity | `~/.gemini/config/skills/` |
+
+技能名稱**四個 agent 完全相同**，不帶 agent 前綴（`github`、`obsidian`…）。
 
 **目錄不存在＝這台電腦沒裝那個工具**，略過即可，不要建目錄、不要當成錯誤。
 
@@ -28,15 +30,15 @@
 
 | 編號 | 來源資料夾 | 安裝後名稱 | 說明 | 前置需求 |
 |------|-----------|-----------|------|---------|
-| 00 | `skills/00-env-setup` | `<前綴>env-setup` | Node.js LTS、uv、agent 本體與登入 | 無 |
-| 01 | `skills/01-gemini-notebook` | `<前綴>gemini-notebook` | Gemini Notebook（原 NotebookLM）MCP | uv |
-| 02 | `skills/02-github` | `<前綴>github` | Git、GitHub CLI 與登入 | 無 |
-| 03 | `skills/03-obsidian` | `<前綴>obsidian` | Obsidian vault 連接 | Node.js、vault |
-| 04 | `skills/04-firebase` | `<前綴>firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
-| 05 | `skills/05-draw` | `<前綴>draw` | 生圖（內建或 gpt-image-2），含 `draw.py` | uv |
-| — | `skills/install-all` | `<前綴>install-all` | 一次安裝全部 | 無 |
+| 00 | `skills/00-env-setup` | `env-setup` | Node.js LTS、uv、agent 本體與登入 | 無 |
+| 01 | `skills/01-gemini-notebook` | `gemini-notebook` | Gemini Notebook（原 NotebookLM）MCP | uv |
+| 02 | `skills/02-github` | `github` | Git、GitHub CLI 與登入 | 無 |
+| 03 | `skills/03-obsidian` | `obsidian` | Obsidian vault 連接 | Node.js、vault |
+| 04 | `skills/04-firebase` | `firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
+| 05 | `skills/05-draw` | `draw` | 生圖（內建或 gpt-image-2），含 `draw.py` | uv |
+| — | `skills/install-all` | `install-all` | 一次安裝全部 | 無 |
 
-以 Claude Code 為例，02 安裝後就是 `~/.claude/skills/claude-github/SKILL.md`。
+以 Claude Code 為例，02 安裝後就是 `~/.claude/skills/github/SKILL.md`。
 
 ---
 
@@ -77,28 +79,36 @@ powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent all -ListO
 
 更新已存在的項目要加 `-Force`（預設不覆蓋，只回報「已存在」）。
 
-### 為什麼用這個腳本，而不是各 agent 的原生安裝器
+### 為什麼技能不帶 agent 前綴
 
-`skills/` 底下的 `SKILL.md` frontmatter 一律寫**不帶前綴的 slug**（例如 `name: github`）。
-腳本會在安裝時把 `name` 改寫成 `<前綴><slug>`，再複製到該 agent 的全域目錄。
+四個 agent 的全域目錄各自獨立，本來就不會撞名，所以**不需要**前綴。
+更重要的是：**OpenCode 會同時掃描 `~/.claude/skills` 與 `~/.agents/skills`**，
+所以裝給 Claude Code 與 Codex 的副本它也看得到。
 
-**這是「維護一份、裝到四個 agent」的關鍵** —— 前綴由安裝時產生，原始檔不分岔。
-若直接用各 agent 的原生安裝器，會把 `github` 原名裝進去，四個 agent 的技能就會撞名。
+若使用前綴，`claude-github`／`codex-github`／`opencode-github` 是三個不同名字，
+會在 OpenCode 裡同時出現三份、全部命中「連接 GitHub」。
+**改用同名之後，OpenCode 會自動去重成一份**（first-match-wins）。
 
-各 agent 的原生安裝指令記錄在 `agents.json` 的 `nativeInstall`，僅作為腳本無法執行時的參考；
-若改用原生安裝器，**必須自行把 frontmatter 的 `name` 改成帶前綴的名稱**。
+> 實測（2026-08-02，opencode 1.17.11）：四個技能目錄共 64 個資料夾，
+> OpenCode 只載入 35 個技能且名稱全不重複。詳見 `agents.json` 的 `skillDiscovery.dedup`。
+
+腳本會在安裝時確保 frontmatter 的 `name` 與目標資料夾名一致
+（`agents.json` 的 `prefix` 目前皆為空字串，等於原名安裝）。
+各 agent 的原生安裝指令記錄在 `nativeInstall`，僅作為腳本無法執行時的參考。
 
 ---
 
 ## 步驟五：驗收並回報
 
-逐項確認 `<全域技能目錄>/<前綴><slug>/SKILL.md` 存在，且 frontmatter `name` 與資料夾名稱一致。
+逐項確認 `<全域技能目錄>/<slug>/SKILL.md` 存在，且 frontmatter `name` 與資料夾名稱一致。
 
 若只看到 `02-github` 這種帶編號的資料夾，視為命名錯誤，不得回報成功。
 
-**舊版技能處理**：若偵測到舊 repo 留下的同主題技能（例如 `claude-github` 之外還有
-`codex-notebooklm`、`opencode-browser`、`opencode-second-brain`、`antigravity-notebooklm` 等），
-**先回報清單並取得使用者同意**，才處理。不得自行覆蓋或刪除。
+**舊版技能處理**：舊 repo 裝的是帶前綴的名稱（`claude-github`、`codex-github`、
+`opencode-github`、`antigravity-github`…），與本 repo 的同名技能**不會互相覆蓋**，
+會變成孤兒留在原地。另外還可能有已退役的 `codex-notebooklm`、`opencode-browser`、
+`opencode-second-brain`、`antigravity-notebooklm`。
+一律**先回報完整清單並取得使用者同意**，才處理。**不得自行覆蓋或刪除。**
 
 每項回報 ✅／⚠️／❌，列出實際全域路徑，最後給總表，並註明：
 安裝狀態、驗證結果、使用者仍需完成的互動步驟、建立的檔案或遠端資源、未執行或跳過的項目。

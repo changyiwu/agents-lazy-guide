@@ -5,7 +5,21 @@
 
   "skillDiscovery": {
     "checkedOn": "2026-08-02",
-    "note": "各 agent 實際會掃描的全域技能目錄（依官方文件）。重點：OpenCode 同時讀 ~/.claude/skills 與 ~/.agents/skills，所以裝給 Claude Code 與 Codex 的副本 OpenCode 也看得到，同一主題會出現三份。",
+    "note": "各 agent 實際會掃描的全域技能目錄（依官方文件）。只有 OpenCode 是多路掃描：它同時讀 ~/.claude/skills 與 ~/.agents/skills，所以裝給其他 agent 的副本它也看得到。因為本 repo 四份同名，OpenCode 會自動去重成一份（見 dedup）。",
+    "dedup": {
+      "finding": "OpenCode 對同名技能自動去重（first-match-wins）。四個目錄同名只會載入一份。",
+      "evidence": "2026-08-02 於 PC-YI-FY 實測 opencode 1.17.11：四個技能目錄共 64 個資料夾，opencode debug skill 只載入 35 個技能，且 35 個名稱全不重複；file-toolkit、rdq、sync-skills、startup 這類四處同名的技能各只出現 1 次。",
+      "implication": "重複是前綴造成的，不是多路掃描造成的。改用中性名稱後，六個主題在 OpenCode 從 18 份收斂為 6 份。"
+    },
+    "openCodeEnvVars": {
+      "note": "OpenCode 有環境變數可關閉 Claude Code 相容路徑，但沒有任何開關能關閉 ~/.agents/skills（issue #15396 仍未實作）。改用中性名稱後這些變數都不需要設。",
+      "vars": {
+        "OPENCODE_DISABLE_CLAUDE_CODE": "關閉全部 .claude 支援（實測 1.17.11 不影響 ~/.agents/skills）",
+        "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT": "只關閉 ~/.claude/CLAUDE.md",
+        "OPENCODE_DISABLE_CLAUDE_CODE_SKILLS": "只關閉 ~/.claude/skills"
+      },
+      "measured": "基準 18 份 → 設任一變數後 12 份（claude-* 消失，codex-* 與 opencode-* 仍在）。無法降到 6。"
+    },
     "globalPaths": {
       "claude": ["~/.claude/skills"],
       "codex": ["~/.agents/skills", "/etc/codex/skills"],
@@ -36,7 +50,8 @@
   "repoRules": {
     "entryFile": "INSTALL.md",
     "whyNotSkillMd": "根目錄若存在 SKILL.md，npx skills 會把整個 repo 視為單一 Skill，導致 skills/ 底下的項目無法被列出。入口因此固定使用 INSTALL.md。",
-    "sourceSkillName": "skills/<編號-slug>/SKILL.md 的 frontmatter name 一律寫不帶前綴的 slug（例如 github）。安裝時由 scripts/install.ps1 改寫成 <prefix><slug>。"
+    "sourceSkillName": "skills/<編號-slug>/SKILL.md 的 frontmatter name 一律寫 slug（例如 github），四個 agent 安裝後同名。install.ps1 仍會依 prefix 改寫 name 並保證 name == 資料夾名；目前四個 agent 的 prefix 都是空字串，等於原名安裝。",
+    "whyNoPrefix": "2026-08-02 改採中性名稱。前綴原本是為了避免撞名，但四個 agent 的全域目錄各自獨立本來就不會撞；反而因為 OpenCode 多路掃描，claude-github／codex-github／opencode-github 三個不同名字會同時出現在 OpenCode。實測證實 OpenCode 對同名技能自動去重，所以同名才是正解。prefix 欄位保留，需要時可隨時改回。"
   },
 
   "topics": [
@@ -103,7 +118,7 @@
       "displayName": "Claude Code",
       "detectDir": "~/.claude",
       "skillsDir": "~/.claude/skills",
-      "prefix": "claude-",
+      "prefix": "",
       "nativeInstall": "npx skills add . --skill <skill> -g -y",
       "notes": [
         "所有操作預設在 Claude Code 桌面版的 Code 分頁內完成，使用者不需另開 PowerShell。",
@@ -114,7 +129,7 @@
       "displayName": "Codex",
       "detectDir": "~/.agents",
       "skillsDir": "~/.agents/skills",
-      "prefix": "codex-",
+      "prefix": "",
       "nativeInstall": "npx skills add . --skill <skill> --full-depth --agent codex -g -y",
       "notes": [
         "只使用本地 repo 當安裝來源，不得改用 GitHub URL 或內建 skill-installer 的 GitHub helper。",
@@ -126,20 +141,20 @@
       "displayName": "OpenCode",
       "detectDir": "~/.config/opencode",
       "skillsDir": "~/.config/opencode/skills",
-      "prefix": "opencode-",
+      "prefix": "",
       "nativeInstall": "npx skills add . --skill <skill> --agent opencode --global --copy --yes",
       "notes": [
         "舊 repo 的 npx 來源指向 mathruffian-dot/opencode-lazy-packs（原作者），合併後已改為本地 repo。",
         "gh auth login 等互動式登入需由使用者在互動式終端完成。",
-        "安裝後不得在 ~/.agents/skills/ 留下 opencode-* 副本。"
+        "OpenCode 會同時掃描 ~/.claude/skills 與 ~/.agents/skills，所以裝給其他 agent 的副本它也看得到。因為四份同名，OpenCode 會自動去重成一份（見 skillDiscovery.dedup）。"
       ]
     },
     "antigravity": {
       "displayName": "Antigravity",
       "detectDir": "~/.gemini",
       "skillsDir": "~/.gemini/config/skills",
-      "prefix": "antigravity-",
-      "nativeInstall": "scripts/install-skills.ps1 -Skill <prefix><skill>",
+      "prefix": "",
+      "nativeInstall": "scripts/install-skills.ps1 -Skill <skill>",
       "notes": [
         "舊 repo 已於 2026-08-02 重新編號對齊（03 Obsidian / 04 Firebase / 05 生圖），仍無 00 環境建置（IDE 自帶環境）。",
         "Antigravity 內建生圖能力，05 生圖的外部 API 設定對它為選用。",

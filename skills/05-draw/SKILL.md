@@ -46,8 +46,8 @@ uv run --with openai python "<本 Skill 目錄>/draw.py" "<完整提示詞>" --n
 
 沒有 uv 時先 `pip install openai`（macOS/Linux 加 `--break-system-packages`），改用 `python` 直接執行。
 
-各 agent 的安裝位置：`~/.claude/skills/claude-draw/`、`~/.agents/skills/codex-draw/`、
-`~/.config/opencode/skills/opencode-draw/`、`~/.gemini/config/skills/antigravity-draw/`。
+各 agent 的安裝位置（名稱都是 `draw`）：`~/.claude/skills/draw/`、`~/.agents/skills/draw/`、
+`~/.config/opencode/skills/draw/`、`~/.gemini/config/skills/draw/`。
 
 ### 參數
 
@@ -74,7 +74,8 @@ Key 讀取順序：shell 環境變數 → 當前目錄 `.env` → `~/.openai.env
 
 - 本 Skill **只能執行自己目錄下的 `draw.py`**。
 - **不得**搜尋、載入、複製、修改或改用其他 agent 的生圖 Skill
-  （例如 `opencode-draw` 不可去用 `~/.agents/skills/codex-draw/`）。
+  （不要因為在別的目錄找到同名的 `draw/` 就改用那一份，尤其是舊 repo 留下的
+  `claude-draw`／`codex-draw`／`opencode-draw`／`antigravity-draw`）。
 - 同目錄缺少 `draw.py` 時，**立即停止生圖並回報安裝不完整**，
   用 `scripts/install.ps1` 從本 repo 重新安裝。**不得刪除或簡化本 Skill。**
 

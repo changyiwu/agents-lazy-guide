@@ -11,12 +11,12 @@
 
 原本四份懶人包講的是同樣 6 個主題，共 23 份教學 MD、26 份 SKILL.md，改一次要改四遍。
 
-實際上 agent 之間的差異只有三件事：**全域技能目錄、技能名稱前綴、安裝方式**。
+實際上 agent 之間的差異只有兩件事：**全域技能目錄、安裝方式**。
 這是一張表就能表達的，不需要四份文件。所以本 repo 的做法是：
 
 - 內容只留**一份**，放在 `guides/`（人看的教學）與 `skills/`（agent 執行的步驟）
 - 差異全部集中在 **`agents.json`**
-- 前綴在**安裝時由腳本改寫**，原始檔不分岔
+- 技能名稱四個 agent **完全相同**，不帶 agent 前綴
 
 ---
 
@@ -71,7 +71,7 @@ agents-lazy-guide/
 ├── guides/              # 人看的完整教學，一主題一份
 ├── skills/              # Agent 執行的精簡步驟，一主題一份
 └── scripts/
-    └── install.ps1      # 讀 agents.json，安裝時改寫前綴與路徑
+    └── install.ps1      # 讀 agents.json，裝到各 agent 的正確目錄
 ```
 
 **兩層設計**：`guides/` 給人看（含背景、註冊引導、常見問題），`skills/` 給 agent 執行
@@ -81,27 +81,41 @@ agents-lazy-guide/
 
 ## Agent 差異對照
 
-| | 全域技能目錄 | 前綴 |
-|---|---|---|
-| Claude Code | `~/.claude/skills/` | `claude-` |
-| Codex | `~/.agents/skills/` | `codex-` |
-| OpenCode | `~/.config/opencode/skills/` | `opencode-` |
-| Antigravity | `~/.gemini/config/skills/` | `antigravity-` |
+| | 全域技能目錄 |
+|---|---|
+| Claude Code | `~/.claude/skills/` |
+| Codex | `~/.agents/skills/` |
+| OpenCode | `~/.config/opencode/skills/` |
+| Antigravity | `~/.gemini/config/skills/` |
 
-完整差異（安裝指令、各 agent 注意事項）見 [`agents.json`](agents.json)。
+技能名稱四個 agent 相同（`github`、`obsidian`…），**不帶 agent 前綴**。
+
+> **為什麼不用前綴？** 四個目錄各自獨立本來就不會撞名；而 OpenCode 會同時掃描
+> `~/.claude/skills` 與 `~/.agents/skills`，用前綴反而會讓同一主題在 OpenCode 裡
+> 出現三份不同名字的技能。同名則會被自動去重成一份。
+> 實測（opencode 1.17.11）：四個目錄共 64 個資料夾，OpenCode 只載入 35 個且名稱全不重複。
+
+完整差異（安裝指令、探索路徑、各 agent 注意事項）見 [`agents.json`](agents.json)。
 
 ---
 
 ## 目前狀態：尚未安裝
 
-合併版的技能名稱與舊 repo 已安裝的**完全同名**（`claude-github` 等），安裝即原地覆蓋。
+六個主題已全部搬移完成，四個 agent 的沙箱安裝實測通過，但**還沒裝到真實環境**。
 
-**決定（2026-08-02）：六個主題全部搬完前不安裝**，避免「02 是合併版、其他五個是舊版」的混用期。
-搬完後一次切換：
+一次切換：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent all -Force
+powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent all
 ```
+
+> ⚠️ **切換後需要清理舊技能。**
+> 本 repo 改用中性名稱（`github`），與舊 repo 裝的帶前綴名稱（`claude-github`、
+> `codex-github`、`opencode-github`、`antigravity-github`…）**不會互相覆蓋**，
+> 舊的會變成孤兒留在原地，造成同一主題有兩份。
+>
+> 四個目錄 × 6 個主題 = 24 個舊資料夾需要移除。清理前請先列出完整清單確認，
+> **不要自動刪除**。
 
 ---
 

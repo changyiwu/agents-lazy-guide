@@ -23,13 +23,13 @@ description: 一次安裝並執行全部六個懶人包技能（環境建置、G
 | 04 | `firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
 | 05 | `draw` | 生圖（agent 內建或 OpenAI gpt-image-2） | uv、（路線 B）OpenAI API Key |
 
-安裝後的實際名稱會加上該 agent 的前綴，例如 Claude Code 是 `claude-github`。
+安裝後的名稱**四個 agent 相同**，就是上表的名稱（不帶 agent 前綴）。
 
 ## 步驟
 
 1. **辨識目前的 agent**（讀 `agents.json`），無法自我辨識時直接問使用者。
 2. **列出上表與目前安裝狀態**，讓使用者選擇「全部」或編號組合。
-3. **安裝**（四個 agent 都用同一個腳本，會自動改寫 frontmatter 前綴）：
+3. **安裝**（四個 agent 都用同一個腳本）：
 
    ```powershell
    powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent <agent>
@@ -39,15 +39,18 @@ description: 一次安裝並執行全部六個懶人包技能（環境建置、G
 
 4. **逐項確認是否要執行 00–05**。已安裝且驗證正常的外部工具可以跳過執行，
    但對應的 Skill 本身仍須保留在全域目錄。
-5. **驗收**：確認 `<全域技能目錄>/<前綴><slug>/SKILL.md` 存在，
+5. **驗收**：確認 `<全域技能目錄>/<slug>/SKILL.md` 存在，
    且 frontmatter `name` 與資料夾名稱一致。
    只看到 `02-github` 這種帶編號的資料夾視為命名錯誤，不得回報成功。
 
 ## 舊版技能處理
 
-偵測到舊 repo 留下的同主題技能（例如 `codex-notebooklm`、`opencode-browser`、
-`opencode-second-brain`、`antigravity-notebooklm`）時，**先回報清單並取得使用者同意**才處理。
-**不得自行覆蓋或刪除。**
+舊 repo 裝的是帶前綴的名稱（`claude-github`、`codex-github`、`opencode-github`、
+`antigravity-github`…），與本 repo 的同名技能**不會互相覆蓋**，會變成孤兒留在原地。
+另可能有已退役的 `codex-notebooklm`、`opencode-browser`、`opencode-second-brain`、
+`antigravity-notebooklm`。
+
+一律**先回報完整清單並取得使用者同意**才處理。**不得自行覆蓋或刪除。**
 
 ## 回報
 
