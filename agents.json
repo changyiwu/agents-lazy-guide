@@ -3,6 +3,36 @@
   "updated": "2026-08-02",
   "description": "四個 AI Agent 的懶人包差異表。這是整個 repo 唯一記錄 agent 差異的地方，其餘文件一律通用。",
 
+  "skillDiscovery": {
+    "checkedOn": "2026-08-02",
+    "note": "各 agent 實際會掃描的全域技能目錄（依官方文件）。重點：OpenCode 同時讀 ~/.claude/skills 與 ~/.agents/skills，所以裝給 Claude Code 與 Codex 的副本 OpenCode 也看得到，同一主題會出現三份。",
+    "globalPaths": {
+      "claude": ["~/.claude/skills"],
+      "codex": ["~/.agents/skills", "/etc/codex/skills"],
+      "opencode": ["~/.config/opencode/skills", "~/.claude/skills", "~/.agents/skills"],
+      "antigravity": ["~/.gemini/config/skills"]
+    },
+    "projectPaths": {
+      "claude": [".claude/skills"],
+      "codex": [".agents/skills"],
+      "opencode": [".opencode/skills", ".claude/skills", ".agents/skills"],
+      "antigravity": [".agents/skills"]
+    },
+    "sources": [
+      "https://code.claude.com/docs/en/skills",
+      "https://learn.chatgpt.com/docs/build-skills.md",
+      "https://opencode.ai/docs/skills",
+      "https://antigravity.google/docs/skills"
+    ],
+    "nameRules": {
+      "claude": "資料夾名即為 /指令名稱",
+      "opencode": "name 必須與資料夾名相同（1–64 字元，小寫英數與連字號）",
+      "codex": "SKILL.md 需有 name 與 description",
+      "antigravity": "name 選填，未填時預設用資料夾名",
+      "conclusion": "維持 name == 資料夾名可同時滿足四家；install.ps1 已如此處理。"
+    }
+  },
+
   "repoRules": {
     "entryFile": "INSTALL.md",
     "whyNotSkillMd": "根目錄若存在 SKILL.md，npx skills 會把整個 repo 視為單一 Skill，導致 skills/ 底下的項目無法被列出。入口因此固定使用 INSTALL.md。",
@@ -111,7 +141,7 @@
       "prefix": "antigravity-",
       "nativeInstall": "scripts/install-skills.ps1 -Skill <prefix><skill>",
       "notes": [
-        "舊 repo 沒有 00 環境建置，編號順序也不同（03 Firebase / 04 生圖 / 05 Obsidian）；本 repo 一律使用 00–05 標準編號。",
+        "舊 repo 已於 2026-08-02 重新編號對齊（03 Obsidian / 04 Firebase / 05 生圖），仍無 00 環境建置（IDE 自帶環境）。",
         "Antigravity 內建生圖能力，05 生圖的外部 API 設定對它為選用。",
         "預設只做唯讀驗收，建立／刪除遠端資源需另外取得授權。"
       ]
