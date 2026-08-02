@@ -16,10 +16,17 @@
 
 ## ➡️ 下一步
 
-1. 在四個 agent 各抽一個主題實跑，確認合併版步驟可用（`agents.md` 階段六）
+1. 在四個 agent 各抽一個主題實跑，確認合併版步驟可用（`agents.md` 階段八）
 2. 舊四個 repo 的 README 改成指向本 repo 的 stub（**不要刪 repo**）
 3. 之後每次改動 `skills/` 或 `agents.json`，重跑
    `scripts/install.ps1 -Agent all -Force`，再跑 `sync-skills` 更新安裝清單
+
+## 🔗 本次一起異動的其他 repo（都已 push）
+
+- `antigravity-lazy-pack`：編號三循環對齊其他三份（03 Obsidian／04 Firebase／05 生圖）。
+  安裝名 `antigravity-*` 未變，已安裝者不必重裝。`validate-lazy-pack.ps1` 通過
+- `skill-sync`：`sync-skills` 鐵則 4 補上四家官方依據與實測數據
+  （57 個 `SKILL.md` 有 36 個資料夾名 ≠ `name`），四份副本已同步並 hash 驗證
 
 ## ⚠️ 注意事項
 
@@ -36,6 +43,6 @@
 
 ## 🕐 最後更新
 
-- 時間：2026-08-02 04:10
+- 時間：2026-08-02 04:25
 - 更新者：Claude Code @ PC-YI-FY
-- Git push：✅ 已推
+- Git push：待推（收工 L2 完成後回填）

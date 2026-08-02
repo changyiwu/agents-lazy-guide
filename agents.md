@@ -17,16 +17,30 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 
 ## 關鍵時程
 
-- 2026-08-02：六個主題全部搬移完成，專案初始化
+- 2026-08-02：六個主題全部搬移完成、專案初始化、切換上線，技能命名定案為 `agent-<slug>`
 
 ## 目標與路線圖
 
 - [x] 階段一：建立差異表（`agents.json`）、寫作規範（`TEMPLATE.md`）、安裝腳本（`scripts/install.ps1`）
 - [x] 階段二：#02 GitHub 試作並驗證四個 agent 都能正確安裝
 - [x] 階段三：搬移其餘五個主題（#00 環境建置、#01 Gemini Notebook、#03 Obsidian、#04 Firebase、#05 生圖）＋ install-all
-- [ ] 階段四：**一次切換** —— `scripts/install.ps1 -Agent all -Force` 覆蓋舊 repo 裝的同名技能
-- [ ] 階段五：舊四個 repo 的 README 改成指向本 repo 的 stub（不刪除）
-- [ ] 階段六：實機驗證各主題流程（目前內容為文件整併，尚未逐項重跑實測）
+- [x] 階段四：**一次切換上線** —— 四個 agent 各裝 7 個技能，並清除舊 repo 留下的 24 個各自前綴技能
+- [x] 階段五：查證四家官方文件，確立命名規則（見「技能命名規則」）並回寫 `agents.json` 的 `skillDiscovery`
+- [x] 階段六：`antigravity-lazy-pack` 編號對齊其他三份（03 Obsidian／04 Firebase／05 生圖）
+- [ ] 階段七：舊四個 repo 的 README 改成指向本 repo 的 stub（不刪除）
+- [ ] 階段八：實機驗證各主題流程（目前內容為文件整併，尚未逐項重跑實測）
+
+## 技能命名規則（定案）
+
+安裝後的名稱是 **`agent-<slug>`，四個 agent 完全相同**。兩條規則不可違反：
+
+1. **前綴必須四家相同。** OpenCode 會同時掃描 `~/.claude/skills` 與 `~/.agents/skills`，
+   改成各自的 `claude-`／`codex-` 會讓同一主題在 OpenCode 出現三份；四家同名才會自動去重。
+   實測：切換前載入 35 個技能、六主題佔 18 份；切換後 23 個、六主題各 1 份。
+2. **來源 `SKILL.md` 的 `name` 寫不帶前綴的 slug**，`agent-` 由 `install.ps1` 安裝時加上。
+   要改前綴只需改 `agents.json` 的 `prefix` 一處。
+
+選 `agent-` 而非完全不帶前綴，是為了讓本專案的七個技能在全域目錄按字母排序時集中成一區。
 
 ## 資料夾結構
 
