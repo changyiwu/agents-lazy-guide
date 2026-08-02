@@ -16,7 +16,7 @@
 
 - 內容只留**一份**，放在 `guides/`（人看的教學）與 `skills/`（agent 執行的步驟）
 - 差異全部集中在 **`agents.json`**
-- 技能名稱四個 agent **完全相同**，不帶 agent 前綴
+- 技能名稱四個 agent **完全相同**，統一用 `agent-` 前綴
 
 ---
 
@@ -88,34 +88,34 @@ agents-lazy-guide/
 | OpenCode | `~/.config/opencode/skills/` |
 | Antigravity | `~/.gemini/config/skills/` |
 
-技能名稱四個 agent 相同（`github`、`obsidian`…），**不帶 agent 前綴**。
+技能名稱四個 agent 相同，統一用 `agent-` 前綴：`agent-github`、`agent-obsidian`、
+`agent-firebase`、`agent-draw`、`agent-env-setup`、`agent-gemini-notebook`、`agent-install-all`。
 
-> **為什麼不用前綴？** 四個目錄各自獨立本來就不會撞名；而 OpenCode 會同時掃描
-> `~/.claude/skills` 與 `~/.agents/skills`，用前綴反而會讓同一主題在 OpenCode 裡
-> 出現三份不同名字的技能。同名則會被自動去重成一份。
-> 實測（opencode 1.17.11）：四個目錄共 64 個資料夾，OpenCode 只載入 35 個且名稱全不重複。
+> **重點是「四家同名」，不是「有沒有前綴」。** OpenCode 會同時掃描 `~/.claude/skills`
+> 與 `~/.agents/skills`，所以用**各自**的前綴（`claude-github`／`codex-github`／
+> `opencode-github`）會讓同一主題在 OpenCode 裡出現三份；四家同名則會被自動去重成一份。
+> 實測（opencode 1.17.11）：切換前載入 35 個技能、六主題佔 18 份；切換後 23 個、六主題各 1 份。
+>
+> 前綴選 `agent-` 而非完全不帶，是為了讓本專案的七個技能在全域目錄裡集中成一區
+> ——純 slug 按字母排序會散落各處，也比較容易誤觸發。
 
 完整差異（安裝指令、探索路徑、各 agent 注意事項）見 [`agents.json`](agents.json)。
 
 ---
 
-## 目前狀態：尚未安裝
+## 目前狀態：已安裝（2026-08-02）
 
-六個主題已全部搬移完成，四個 agent 的沙箱安裝實測通過，但**還沒裝到真實環境**。
+六個主題全部搬移完成，並已切換到四個 agent 的全域目錄。
+舊 repo 留下的 24 個各自前綴技能（`claude-*`／`codex-*`／`opencode-*`／`antigravity-*`）已清除。
 
-一次切換：
+重新安裝或更新：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent all
+powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent all -Force
 ```
 
-> ⚠️ **切換後需要清理舊技能。**
-> 本 repo 改用中性名稱（`github`），與舊 repo 裝的帶前綴名稱（`claude-github`、
-> `codex-github`、`opencode-github`、`antigravity-github`…）**不會互相覆蓋**，
-> 舊的會變成孤兒留在原地，造成同一主題有兩份。
->
-> 四個目錄 × 6 個主題 = 24 個舊資料夾需要移除。清理前請先列出完整清單確認，
-> **不要自動刪除**。
+> 改動 `agents.json` 的 `prefix` 後要重裝，並記得清掉舊名稱的資料夾
+> ——名稱不同的技能**不會互相覆蓋**，舊的會變成孤兒留在原地。
 
 ---
 

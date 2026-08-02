@@ -18,7 +18,7 @@
 | OpenCode | `~/.config/opencode/skills/` |
 | Antigravity | `~/.gemini/config/skills/` |
 
-技能名稱**四個 agent 完全相同**，不帶 agent 前綴（`github`、`obsidian`…）。
+技能名稱**四個 agent 完全相同**，統一用 `agent-` 前綴（`agent-github`、`agent-obsidian`…）。
 
 **目錄不存在＝這台電腦沒裝那個工具**，略過即可，不要建目錄、不要當成錯誤。
 
@@ -30,15 +30,18 @@
 
 | 編號 | 來源資料夾 | 安裝後名稱 | 說明 | 前置需求 |
 |------|-----------|-----------|------|---------|
-| 00 | `skills/00-env-setup` | `env-setup` | Node.js LTS、uv、agent 本體與登入 | 無 |
-| 01 | `skills/01-gemini-notebook` | `gemini-notebook` | Gemini Notebook（原 NotebookLM）MCP | uv |
-| 02 | `skills/02-github` | `github` | Git、GitHub CLI 與登入 | 無 |
-| 03 | `skills/03-obsidian` | `obsidian` | Obsidian vault 連接 | Node.js、vault |
-| 04 | `skills/04-firebase` | `firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
-| 05 | `skills/05-draw` | `draw` | 生圖（內建或 gpt-image-2），含 `draw.py` | uv |
-| — | `skills/install-all` | `install-all` | 一次安裝全部 | 無 |
+| 00 | `skills/00-env-setup` | `agent-env-setup` | Node.js LTS、uv、agent 本體與登入 | 無 |
+| 01 | `skills/01-gemini-notebook` | `agent-gemini-notebook` | Gemini Notebook（原 NotebookLM）MCP | uv |
+| 02 | `skills/02-github` | `agent-github` | Git、GitHub CLI 與登入 | 無 |
+| 03 | `skills/03-obsidian` | `agent-obsidian` | Obsidian vault 連接 | Node.js、vault |
+| 04 | `skills/04-firebase` | `agent-firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
+| 05 | `skills/05-draw` | `agent-draw` | 生圖（內建或 gpt-image-2），含 `draw.py` | uv |
+| — | `skills/install-all` | `agent-install-all` | 一次安裝全部 | 無 |
 
-以 Claude Code 為例，02 安裝後就是 `~/.claude/skills/github/SKILL.md`。
+以 Claude Code 為例，02 安裝後就是 `~/.claude/skills/agent-github/SKILL.md`。
+
+> 來源的 `SKILL.md` 裡 `name` 寫的是不帶前綴的 slug（`github`），`agent-` 由
+> `install.ps1` 在安裝時加上。這樣要改前綴只需改 `agents.json` 一處。
 
 ---
 
@@ -79,15 +82,19 @@ powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent all -ListO
 
 更新已存在的項目要加 `-Force`（預設不覆蓋，只回報「已存在」）。
 
-### 為什麼技能不帶 agent 前綴
+### 為什麼前綴是 `agent-`，四家都一樣
 
-四個 agent 的全域目錄各自獨立，本來就不會撞名，所以**不需要**前綴。
-更重要的是：**OpenCode 會同時掃描 `~/.claude/skills` 與 `~/.agents/skills`**，
-所以裝給 Claude Code 與 Codex 的副本它也看得到。
+關鍵是**四家用同一個名字**，而不是「有沒有前綴」。
 
-若使用前綴，`claude-github`／`codex-github`／`opencode-github` 是三個不同名字，
+**OpenCode 會同時掃描 `~/.claude/skills` 與 `~/.agents/skills`**，所以裝給
+Claude Code 與 Codex 的副本它也看得到。若像舊 repo 那樣用**各自**的前綴，
+`claude-github`／`codex-github`／`opencode-github` 是三個不同名字，
 會在 OpenCode 裡同時出現三份、全部命中「連接 GitHub」。
-**改用同名之後，OpenCode 會自動去重成一份**（first-match-wins）。
+**四家同名之後，OpenCode 會自動去重成一份**（first-match-wins）。
+
+至於為什麼不乾脆完全不帶前綴：純 slug（`github`、`draw`）在全域技能目錄裡
+按字母排序會散落各處，本專案的七個技能看不出是一組；而且泛用名比較容易誤觸發。
+共用前綴 `agent-` 讓它們集中成一區，又不影響去重。
 
 > 實測（2026-08-02，opencode 1.17.11）：四個技能目錄共 64 個資料夾，
 > OpenCode 只載入 35 個技能且名稱全不重複。詳見 `agents.json` 的 `skillDiscovery.dedup`。
@@ -100,7 +107,7 @@ powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent all -ListO
 
 ## 步驟五：驗收並回報
 
-逐項確認 `<全域技能目錄>/<slug>/SKILL.md` 存在，且 frontmatter `name` 與資料夾名稱一致。
+逐項確認 `<全域技能目錄>/agent-<slug>/SKILL.md` 存在，且 frontmatter `name` 與資料夾名稱一致。
 
 若只看到 `02-github` 這種帶編號的資料夾，視為命名錯誤，不得回報成功。
 

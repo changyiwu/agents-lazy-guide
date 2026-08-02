@@ -10,20 +10,20 @@ description: 一次安裝並執行全部六個懶人包技能（環境建置、G
 > 都要**逐項再確認**。不可把一次「全部安裝」擴張成登入或建立資源的授權。
 
 > 💡 只要完成基礎環境、暫時不處理 GitHub 帳號的話，**不要用「全部安裝」** ——
-> 只安裝並執行 `env-setup` 即可。
+> 只安裝並執行 `agent-env-setup` 即可。
 
 ## 六個項目
 
 | 編號 | 技能 | 內容 | 前置需求 |
 |------|------|------|---------|
-| 00 | `env-setup` | Node.js LTS、uv、agent 本體與登入 | 無 |
-| 01 | `gemini-notebook` | Gemini Notebook（原 NotebookLM）MCP | uv |
-| 02 | `github` | Git、GitHub CLI 與登入 | 無 |
-| 03 | `obsidian` | Obsidian vault 連接（MCPVault 或資料夾授權） | Node.js、vault |
-| 04 | `firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
-| 05 | `draw` | 生圖（agent 內建或 OpenAI gpt-image-2） | uv、（路線 B）OpenAI API Key |
+| 00 | `agent-env-setup` | Node.js LTS、uv、agent 本體與登入 | 無 |
+| 01 | `agent-gemini-notebook` | Gemini Notebook（原 NotebookLM）MCP | uv |
+| 02 | `agent-github` | Git、GitHub CLI 與登入 | 無 |
+| 03 | `agent-obsidian` | Obsidian vault 連接（MCPVault 或資料夾授權） | Node.js、vault |
+| 04 | `agent-firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
+| 05 | `agent-draw` | 生圖（agent 內建或 OpenAI gpt-image-2） | uv、（路線 B）OpenAI API Key |
 
-安裝後的名稱**四個 agent 相同**，就是上表的名稱（不帶 agent 前綴）。
+安裝後的名稱**四個 agent 相同**，就是上表的名稱。共用 `agent-` 前綴讓它們在全域目錄集中成一區。
 
 ## 步驟
 
@@ -39,7 +39,7 @@ description: 一次安裝並執行全部六個懶人包技能（環境建置、G
 
 4. **逐項確認是否要執行 00–05**。已安裝且驗證正常的外部工具可以跳過執行，
    但對應的 Skill 本身仍須保留在全域目錄。
-5. **驗收**：確認 `<全域技能目錄>/<slug>/SKILL.md` 存在，
+5. **驗收**：確認 `<全域技能目錄>/agent-<slug>/SKILL.md` 存在，
    且 frontmatter `name` 與資料夾名稱一致。
    只看到 `02-github` 這種帶編號的資料夾視為命名錯誤，不得回報成功。
 

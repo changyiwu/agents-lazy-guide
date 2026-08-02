@@ -46,8 +46,9 @@ uv run --with openai python "<本 Skill 目錄>/draw.py" "<完整提示詞>" --n
 
 沒有 uv 時先 `pip install openai`（macOS/Linux 加 `--break-system-packages`），改用 `python` 直接執行。
 
-各 agent 的安裝位置（名稱都是 `draw`）：`~/.claude/skills/draw/`、`~/.agents/skills/draw/`、
-`~/.config/opencode/skills/draw/`、`~/.gemini/config/skills/draw/`。
+各 agent 的安裝位置（名稱都是 `agent-draw`）：`~/.claude/skills/agent-draw/`、
+`~/.agents/skills/agent-draw/`、`~/.config/opencode/skills/agent-draw/`、
+`~/.gemini/config/skills/agent-draw/`。
 
 ### 參數
 

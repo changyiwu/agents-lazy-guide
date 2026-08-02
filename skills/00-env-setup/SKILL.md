@@ -8,7 +8,7 @@ description: 建置 AI Agent 開發環境（Node.js LTS、uv、agent 本體與�
 完整教學見 `guides/00-環境建置.md`。以下是執行流程。
 
 **本 Skill 不處理 GitHub。** 不檢查 GitHub 帳號、不執行 `gh auth status`、不安裝 Git 或
-GitHub CLI —— 那些全部由 `github` Skill 負責。
+GitHub CLI —— 那些全部由 `agent-github` Skill 負責。
 
 ## 步驟
 

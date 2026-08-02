@@ -9,10 +9,10 @@
     "dedup": {
       "finding": "OpenCode 對同名技能自動去重（first-match-wins）。四個目錄同名只會載入一份。",
       "evidence": "2026-08-02 於 PC-YI-FY 實測 opencode 1.17.11：四個技能目錄共 64 個資料夾，opencode debug skill 只載入 35 個技能，且 35 個名稱全不重複；file-toolkit、rdq、sync-skills、startup 這類四處同名的技能各只出現 1 次。",
-      "implication": "重複是前綴造成的，不是多路掃描造成的。改用中性名稱後，六個主題在 OpenCode 從 18 份收斂為 6 份。"
+      "implication": "重複是「各自前綴」造成的，不是多路掃描造成的。改為四家同名後，六個主題在 OpenCode 從 18 份收斂為 6 份（實測：載入數 35 → 23）。共用前綴 agent- 不影響去重，因為四家仍然同名。"
     },
     "openCodeEnvVars": {
-      "note": "OpenCode 有環境變數可關閉 Claude Code 相容路徑，但沒有任何開關能關閉 ~/.agents/skills（issue #15396 仍未實作）。改用中性名稱後這些變數都不需要設。",
+      "note": "OpenCode 有環境變數可關閉 Claude Code 相容路徑，但沒有任何開關能關閉 ~/.agents/skills（issue #15396 仍未實作）。改為四家同名後這些變數都不需要設。",
       "vars": {
         "OPENCODE_DISABLE_CLAUDE_CODE": "關閉全部 .claude 支援（實測 1.17.11 不影響 ~/.agents/skills）",
         "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT": "只關閉 ~/.claude/CLAUDE.md",
@@ -50,8 +50,8 @@
   "repoRules": {
     "entryFile": "INSTALL.md",
     "whyNotSkillMd": "根目錄若存在 SKILL.md，npx skills 會把整個 repo 視為單一 Skill，導致 skills/ 底下的項目無法被列出。入口因此固定使用 INSTALL.md。",
-    "sourceSkillName": "skills/<編號-slug>/SKILL.md 的 frontmatter name 一律寫 slug（例如 github），四個 agent 安裝後同名。install.ps1 仍會依 prefix 改寫 name 並保證 name == 資料夾名；目前四個 agent 的 prefix 都是空字串，等於原名安裝。",
-    "whyNoPrefix": "2026-08-02 改採中性名稱。前綴原本是為了避免撞名，但四個 agent 的全域目錄各自獨立本來就不會撞；反而因為 OpenCode 多路掃描，claude-github／codex-github／opencode-github 三個不同名字會同時出現在 OpenCode。實測證實 OpenCode 對同名技能自動去重，所以同名才是正解。prefix 欄位保留，需要時可隨時改回。"
+    "sourceSkillName": "skills/<編號-slug>/SKILL.md 的 frontmatter name 一律寫不帶前綴的 slug（例如 github）。install.ps1 在安裝時把 name 改寫成 <prefix><slug> 並保證 name == 資料夾名。目前 prefix 四家統一為 agent-，所以裝出來是 agent-github。",
+    "whySharedPrefix": "前綴必須「四家相同」，不能「每家不同」。2026-08-02 先移除各自前綴（claude-／codex-／opencode-／antigravity-），因為 OpenCode 多路掃描會讓同一主題出現三個不同名字、無法去重；同日再改為四家共用的 agent-，原因是純中性名稱（github、draw）在全域目錄裡按字母排序會散落各處不易判讀，且泛用名較容易誤觸發。agent- 同時滿足兩者：四家同名所以 OpenCode 仍會去重，共用前綴又讓本專案的技能在清單裡集中成一區。"
   },
 
   "topics": [
@@ -118,7 +118,7 @@
       "displayName": "Claude Code",
       "detectDir": "~/.claude",
       "skillsDir": "~/.claude/skills",
-      "prefix": "",
+      "prefix": "agent-",
       "nativeInstall": "npx skills add . --skill <skill> -g -y",
       "notes": [
         "所有操作預設在 Claude Code 桌面版的 Code 分頁內完成，使用者不需另開 PowerShell。",
@@ -129,7 +129,7 @@
       "displayName": "Codex",
       "detectDir": "~/.agents",
       "skillsDir": "~/.agents/skills",
-      "prefix": "",
+      "prefix": "agent-",
       "nativeInstall": "npx skills add . --skill <skill> --full-depth --agent codex -g -y",
       "notes": [
         "只使用本地 repo 當安裝來源，不得改用 GitHub URL 或內建 skill-installer 的 GitHub helper。",
@@ -141,7 +141,7 @@
       "displayName": "OpenCode",
       "detectDir": "~/.config/opencode",
       "skillsDir": "~/.config/opencode/skills",
-      "prefix": "",
+      "prefix": "agent-",
       "nativeInstall": "npx skills add . --skill <skill> --agent opencode --global --copy --yes",
       "notes": [
         "舊 repo 的 npx 來源指向 mathruffian-dot/opencode-lazy-packs（原作者），合併後已改為本地 repo。",
@@ -153,7 +153,7 @@
       "displayName": "Antigravity",
       "detectDir": "~/.gemini",
       "skillsDir": "~/.gemini/config/skills",
-      "prefix": "",
+      "prefix": "agent-",
       "nativeInstall": "scripts/install-skills.ps1 -Skill <skill>",
       "notes": [
         "舊 repo 已於 2026-08-02 重新編號對齊（03 Obsidian / 04 Firebase / 05 生圖），仍無 00 環境建置（IDE 自帶環境）。",
@@ -164,10 +164,13 @@
   },
 
   "rollout": {
-    "decision": "六個主題全部搬移完成前，不安裝到任何 agent 的全域目錄。",
-    "reason": "合併版的技能名稱與舊 repo 已安裝的完全同名（claude-github 等），安裝即原地覆蓋。等全部搬完再一次切換，避免出現「02 是合併版、其他五個是舊版」的混用期。",
-    "decidedOn": "2026-08-02",
-    "thenRun": "scripts/install.ps1 -Agent all -Force"
+    "status": "已完成（2026-08-02）",
+    "history": [
+      "六個主題全部搬移完成前不安裝，避免「02 是合併版、其他五個是舊版」的混用期。",
+      "2026-08-02 一次切換：安裝 7 技能 × 4 agent，並移除舊 repo 留下的 24 個各自前綴技能（claude-*／codex-*／opencode-*／antigravity-*）。",
+      "2026-08-02 再把安裝名加上共用前綴 agent-，讓本專案技能在全域目錄裡集中成一區。"
+    ],
+    "reinstall": "scripts/install.ps1 -Agent all（更新既有安裝加 -Force）"
   },
 
   "legacyRepos": {

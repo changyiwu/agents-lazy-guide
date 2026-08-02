@@ -85,17 +85,20 @@ tags:
 
 ```yaml
 ---
-name: <slug>          # ★ 不帶 agent 前綴，四個 agent 裝出來同名
+name: <slug>          # ★ 不帶前綴。install.ps1 安裝時加上 agent-，四家同名
 description: <觸發語句>。說「XXX」時載入。
 ---
 ```
 
-> `name` 寫 `github`，**不要**寫 `claude-github`。`name` 必須與資料夾名一致
-> （OpenCode 硬性要求，其他三家也相容）。description 也不要提到特定 agent 名稱。
+> `name` 寫不帶前綴的 slug（`github`），**不要**寫 `agent-github`，更不要寫 `claude-github`。
+> 安裝時 `install.ps1` 會依 `agents.json` 的 `prefix` 加上 `agent-`，並保證
+> `name` 與資料夾名一致（OpenCode 硬性要求，其他三家也相容）。
+> description 也不要提到特定 agent 名稱。
 >
-> **為什麼不用前綴**：四個 agent 的全域目錄各自獨立不會撞名；而 OpenCode 會同時掃描
-> `~/.claude/skills` 與 `~/.agents/skills`，用前綴會讓同一主題出現三份不同名的技能，
-> 同名則會被自動去重。詳見 `agents.json` 的 `skillDiscovery`。
+> **前綴四家必須相同**：OpenCode 會同時掃描 `~/.claude/skills` 與 `~/.agents/skills`，
+> 用**各自**的前綴會讓同一主題出現三份不同名的技能；四家同名才會被自動去重。
+> 選 `agent-` 而非完全不帶，是為了讓本專案技能在全域目錄集中成一區。
+> 詳見 `agents.json` 的 `skillDiscovery` 與 `repoRules.whySharedPrefix`。
 
 ### 必備區塊
 
