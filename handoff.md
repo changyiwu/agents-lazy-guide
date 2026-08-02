@@ -18,7 +18,6 @@
 
 ## ➡️ 下一步
 
-0. 本次異動尚未 commit／push，接手前先處理
 1. 在四個 agent 各抽一個主題實跑，確認合併版步驟可用（`agents.md` 階段八）
 2. 舊四個 repo 的 README 改成指向本 repo 的 stub（**不要刪 repo**）
 3. 之後每次改動 `skills/` 或 `agents.json`，重跑
@@ -52,4 +51,4 @@
 
 - 時間：2026-08-02（PC-YI-SL 補做那批）
 - 更新者：Claude Code @ PC-YI-SL
-- Git push：⬜ 本次異動（install.ps1 降版＋BOM、agents.md 兩條規則、本檔）尚未 push
+- Git push：✅ 已推（`ac9b9dd`：install.ps1 降版＋BOM、agents.md 兩條規則、本檔）
