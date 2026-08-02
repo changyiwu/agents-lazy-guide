@@ -9,13 +9,16 @@
 
 ## 🚦 目前狀態
 
-- **已上線**：四個目錄各 22 個技能，其中 7 個是本專案的 `agent-*`
+- **已上線的電腦**：PC-YI-FY（2026-08-02）、PC-YI-SL（2026-08-02 補做）。
+  兩台的四個技能目錄現在都是 7 個 `agent-*` ＋ 4 個他專案技能
+  （`project-init`／`shutdown`／`startup`／`sync-skills`），舊前綴殘留為 0
 - **OpenCode 去重驗證通過**：切換前載入 35 個技能、六主題佔 18 份；切換後 23 個、六主題各 1 份
 - **內容為文件整併，尚未逐項重跑實測**：各主題的步驟取自四份來源的聯集，
   但合併後的流程本身還沒在真機上從頭跑過一次
 
 ## ➡️ 下一步
 
+0. 本次異動尚未 commit／push，接手前先處理
 1. 在四個 agent 各抽一個主題實跑，確認合併版步驟可用（`agents.md` 階段八）
 2. 舊四個 repo 的 README 改成指向本 repo 的 stub（**不要刪 repo**）
 3. 之後每次改動 `skills/` 或 `agents.json`，重跑
@@ -36,13 +39,17 @@
 - **來源 `skills/*/SKILL.md` 的 `name` 寫不帶前綴的 slug**（`github`），
   `agent-` 由 `install.ps1` 安裝時加上。不要手動寫進源檔
 - **根目錄絕對不能出現 `SKILL.md`**，否則 `npx skills` 會把整個 repo 當單一 Skill
-- 舊 repo 可能還有已退役的技能（`codex-notebooklm`、`opencode-browser`、
-  `opencode-second-brain`、`antigravity-notebooklm`），清理前先取得使用者同意
+- **技能目錄不在雲端硬碟，每台電腦都要各自清舊裝新。** 換電腦接手先實際列一次
+  四個目錄，不要相信本檔的記錄（PC-YI-SL 就是這樣才發現舊技能整組還在）
+- 已退役技能在兩台都已刪除（`codex-essentials`、`opencode-browser`、
+  `opencode-install-all`、`opencode-second-brain`、四家的 `*-notebooklm`）。
+  新 repo 有對應主題的是 notebooklm → `agent-gemini-notebook`、
+  install-all → `agent-install-all`；`browser`／`second-brain`／`essentials` 沒有對應主題，已捨棄
 - #04 Firebase 的預設是「完全不碰線上安全規則」（採 Claude 版最新做法），
   Codex 舊版的規則部署流程已降級為需明確同意的進階章節 —— 改動這段前先確認這個取捨
 
 ## 🕐 最後更新
 
-- 時間：2026-08-02 04:25
-- 更新者：Claude Code @ PC-YI-FY
-- Git push：✅ 已推（`ede00b9`）
+- 時間：2026-08-02（PC-YI-SL 補做那批）
+- 更新者：Claude Code @ PC-YI-SL
+- Git push：⬜ 本次異動（install.ps1 降版＋BOM、agents.md 兩條規則、本檔）尚未 push

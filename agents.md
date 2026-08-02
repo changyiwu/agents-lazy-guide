@@ -115,3 +115,8 @@ agents-lazy-guide/
 - 修改前先確認計畫，優先保留原有資料結構
 - 改動安裝腳本後，**先用沙箱實測**（複製 `scripts/` + `skills/` 到暫存區、
   改寫 `agents.json` 的 `detectDir`/`skillsDir` 指向假目錄再跑），不要直接動真實技能目錄
+- **`scripts/install.ps1` 必須保留 UTF-8 BOM。** 它宣告 `#Requires -Version 5.1`，
+  好讓沒裝 PowerShell 7 的電腦也能直接跑；但 Windows PowerShell 5.1 讀「無 BOM 的 UTF-8」
+  會當成 ANSI，檔內中文全部亂碼、解析階段就失敗。用編輯器另存時要確認 BOM 沒被拿掉
+- **全域技能目錄不在雲端硬碟，每台電腦都要各自跑一次安裝。** 換電腦接手時先確認
+  `~/.claude/skills` 等四個目錄裝的是 `agent-*` 還是舊前綴，不要以 `handoff.md` 的記錄為準

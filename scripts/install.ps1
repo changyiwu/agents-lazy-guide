@@ -1,4 +1,6 @@
-#Requires -Version 7.0
+﻿#Requires -Version 5.1
+# ★ 本檔必須保留 UTF-8 BOM。Windows PowerShell 5.1 讀「無 BOM 的 UTF-8」會當成 ANSI，
+#   檔內中文全部亂碼並在解析階段就失敗（PowerShell 7 兩者皆可）。用編輯器另存時請確認 BOM 還在。
 <#
 .SYNOPSIS
     把 agents-lazy-guide 的通用 Skills 安裝到指定 AI Agent 的全域技能目錄。
