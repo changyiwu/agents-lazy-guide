@@ -14,6 +14,31 @@ tags:
 
 ---
 
+## 名詞說明
+
+| 名詞 | 意思 |
+|------|------|
+| **slug** | 主題的英文短代號，只用**小寫英數與連字號**（`github`、`env-setup`、`gemini-notebook`）。定義在 `agents.json` 的 `topics[].slug`，是整個 repo 的名稱本體。 |
+| **編號** | 兩位數的章節序號（`00`–`05`），只用來維持教學順序與 `guides/` ↔ `skills/` 的對應。**不是名稱的一部分**，不會出現在安裝結果裡。 |
+| **prefix（前綴）** | 安裝時加在 slug 前面的字串，定義在 `agents.json` 每個 agent 的 `prefix`。目前四家統一為 `agent-`。 |
+| **安裝名** | 技能裝到全域目錄後的資料夾名，也是 frontmatter 的 `name`。等於 `<prefix><slug>`。 |
+
+同一個主題在不同位置的長相（以 GitHub 為例）：
+
+```
+agents.json     "slug": "github"        ← 本體
+來源資料夾      skills/02-github/        ← 編號 + slug
+來源 name       name: github             ← 只有 slug，不帶前綴
+安裝後          agent-github             ← prefix + slug（install.ps1 產生）
+```
+
+> **為什麼 slug 只能用小寫英數與連字號**：這不是本專案的偏好，是工具的硬性要求。
+> OpenCode 明文規定技能 `name` 為 1–64 字元的小寫英數與連字號，其他三家也相容此格式。
+> 中文、空格、底線都不行。`sync-skills` 技能的步驟 1 會用
+> `^[A-Za-z0-9._-]+$` 檢查並在不合格時停下來問人。
+
+---
+
 ## 最高原則：不要為了某個 agent 開新檔
 
 發現內容因 agent 而異時，依序考慮：
