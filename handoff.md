@@ -60,4 +60,4 @@
 
 - 時間：2026-08-03（NB-YI 清舊裝新）
 - 更新者：Claude Code @ NB-YI
-- Git push：待推
+- Git push：✅ 已推（`1e0f2d7`：本檔記錄 NB-YI 清舊裝新）
