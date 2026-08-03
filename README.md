@@ -114,7 +114,8 @@ agents-lazy-guide/
 powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent all -Force
 ```
 
-> 改動 `agents.json` 的 `prefix` 後要重裝，並記得清掉舊名稱的資料夾
+> 改前綴要同時改 `agents.json` 的 `prefix` 與各 `SKILL.md` 的 `name`（兩者不符會被腳本擋下），
+> 改完重裝，並記得清掉舊名稱的資料夾
 > ——名稱不同的技能**不會互相覆蓋**，舊的會變成孤兒留在原地。
 
 ---

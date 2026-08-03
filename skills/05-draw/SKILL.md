@@ -1,5 +1,5 @@
 ---
-name: draw
+name: agent-draw
 description: 生圖技能。當使用者要求「畫一張」、「生一張圖」、「做一張圖」、「產生圖片」、「畫個封面」、「畫插圖」、「畫示意圖」、「畫分鏡」，或要「改這張圖」、「把背景換成 XX」等任何需要 AI 生成或修改圖像的情境時，請一定要使用此技能。優先使用 agent 內建生圖工具；沒有內建能力時，執行本 Skill 同目錄的 draw.py 以 gpt-image-2 生圖，預設 quality low，存到當前專案的 slides/generated/（無則 generated/）。
 ---
 

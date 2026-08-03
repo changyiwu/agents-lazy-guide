@@ -1,5 +1,5 @@
 ---
-name: env-setup
+name: agent-env-setup
 description: 建置 AI Agent 開發環境（Node.js LTS、uv、agent 本體與登入）。說「建置環境」「安裝開發環境」時載入。
 ---
 

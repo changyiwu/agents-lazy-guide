@@ -50,7 +50,7 @@
   "repoRules": {
     "entryFile": "INSTALL.md",
     "whyNotSkillMd": "根目錄若存在 SKILL.md，npx skills 會把整個 repo 視為單一 Skill，導致 skills/ 底下的項目無法被列出。入口因此固定使用 INSTALL.md。",
-    "sourceSkillName": "skills/<編號-slug>/SKILL.md 的 frontmatter name 一律寫不帶前綴的 slug（例如 github）。install.ps1 在安裝時把 name 改寫成 <prefix><slug> 並保證 name == 資料夾名。目前 prefix 四家統一為 agent-，所以裝出來是 agent-github。",
+    "sourceSkillName": "skills/<編號-slug>/SKILL.md 的 frontmatter name 一律寫含前綴的安裝名（例如 agent-github）。install.ps1 原樣複製、不改寫內容，只驗證 name == <prefix><slug>，不一致就報錯要求改來源。2026-08-03 從「安裝時加前綴」改成「來源就帶前綴」，因為 sync-skills 以來源 frontmatter 的 name 決定安裝名並逐檔比對 hash，安裝時改寫會讓來源（github）與副本（agent-github）對不起來而報錯。",
     "whySharedPrefix": "前綴必須「四家相同」，不能「每家不同」。2026-08-02 先移除各自前綴（claude-／codex-／opencode-／antigravity-），因為 OpenCode 多路掃描會讓同一主題出現三個不同名字、無法去重；同日再改為四家共用的 agent-，原因是純中性名稱（github、draw）在全域目錄裡按字母排序會散落各處不易判讀，且泛用名較容易誤觸發。agent- 同時滿足兩者：四家同名所以 OpenCode 仍會去重，共用前綴又讓本專案的技能在清單裡集中成一區。"
   },
 

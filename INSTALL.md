@@ -40,8 +40,8 @@
 
 以 Claude Code 為例，02 安裝後就是 `~/.claude/skills/agent-github/SKILL.md`。
 
-> 來源的 `SKILL.md` 裡 `name` 寫的是不帶前綴的 slug（`github`），`agent-` 由
-> `install.ps1` 在安裝時加上。這樣要改前綴只需改 `agents.json` 一處。
+> 來源的 `SKILL.md` 裡 `name` 就是含前綴的安裝名（`agent-github`）。
+> `install.ps1` 原樣複製、不改寫，只驗證 `name` 等於 `agents.json` 的 `<prefix><slug>`。
 
 ---
 
@@ -99,8 +99,8 @@ Claude Code 與 Codex 的副本它也看得到。若像舊 repo 那樣用**各�
 > 實測（2026-08-02，opencode 1.17.11）：四個技能目錄共 64 個資料夾，
 > OpenCode 只載入 35 個技能且名稱全不重複。詳見 `agents.json` 的 `skillDiscovery.dedup`。
 
-腳本會在安裝時確保 frontmatter 的 `name` 與目標資料夾名一致
-（`agents.json` 的 `prefix` 目前皆為空字串，等於原名安裝）。
+腳本會驗證來源 frontmatter 的 `name` 等於 `<prefix><slug>`，不一致就報錯要求改來源，
+然後原樣複製整個資料夾（副本與原始檔逐位元組相同，`sync-skills` 的 hash 比對才會過）。
 各 agent 的原生安裝指令記錄在 `nativeInstall`，僅作為腳本無法執行時的參考。
 
 ---

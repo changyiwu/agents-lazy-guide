@@ -12,12 +12,13 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 **核心設計**：內容只留一份，agent 差異全部集中在 `agents.json`，
 技能名稱**四個 agent 完全相同**，統一用 `agent-` 前綴（`agent-github`、`agent-obsidian`…）——
 關鍵是四家同名，OpenCode 多路掃描時才會自動去重；共用前綴則讓本專案技能在全域目錄集中成一區。
-`scripts/install.ps1` 依 `agents.json` 把同一份原始檔裝到各 agent 的正確目錄，
-並保證 frontmatter `name` 與資料夾名一致。
+`scripts/install.ps1` 依 `agents.json` 把同一份原始檔原樣裝到各 agent 的正確目錄，
+並驗證 frontmatter `name` 與資料夾名一致。
 
 ## 關鍵時程
 
 - 2026-08-02：六個主題全部搬移完成、專案初始化、切換上線，技能命名定案為 `agent-<slug>`
+- 2026-08-03：前綴改由來源 `SKILL.md` 直接帶（不再安裝時改寫），`install.ps1` 改為驗證＋原樣複製
 
 ## 目標與路線圖
 
@@ -27,8 +28,9 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 - [x] 階段四：**一次切換上線** —— 四個 agent 各裝 7 個技能，並清除舊 repo 留下的 24 個各自前綴技能
 - [x] 階段五：查證四家官方文件，確立命名規則（見「技能命名規則」）並回寫 `agents.json` 的 `skillDiscovery`
 - [x] 階段六：`antigravity-lazy-pack` 編號對齊其他三份（03 Obsidian／04 Firebase／05 生圖）
-- [ ] 階段七：舊四個 repo 的 README 改成指向本 repo 的 stub（不刪除）
-- [ ] 階段八：實機驗證各主題流程（目前內容為文件整併，尚未逐項重跑實測）
+- [x] 階段七：來源 `SKILL.md` 的 `name` 直接帶 `agent-` 前綴，`install.ps1` 停止改寫（相容 `sync-skills`）
+- [ ] 階段八：舊四個 repo 的 README 改成指向本 repo 的 stub（不刪除）
+- [ ] 階段九：實機驗證各主題流程（目前內容為文件整併，尚未逐項重跑實測）
 
 ## 技能命名規則（定案）
 
@@ -37,8 +39,10 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 1. **前綴必須四家相同。** OpenCode 會同時掃描 `~/.claude/skills` 與 `~/.agents/skills`，
    改成各自的 `claude-`／`codex-` 會讓同一主題在 OpenCode 出現三份；四家同名才會自動去重。
    實測：切換前載入 35 個技能、六主題佔 18 份；切換後 23 個、六主題各 1 份。
-2. **來源 `SKILL.md` 的 `name` 寫不帶前綴的 slug**，`agent-` 由 `install.ps1` 安裝時加上。
-   要改前綴只需改 `agents.json` 的 `prefix` 一處。
+2. **來源 `SKILL.md` 的 `name` 直接寫含前綴的安裝名**（`agent-github`）。
+   2026-08-03 從「安裝時加前綴」改為「來源就帶前綴」：`sync-skills` 以來源 frontmatter 的
+   `name` 決定安裝名並逐檔比對 hash，安裝時改寫會讓來源（`github`）與副本（`agent-github`）
+   對不起來而報錯。`install.ps1` 現在只**驗證** `name == <prefix><slug>`，不改寫、原樣複製。
 
 選 `agent-` 而非完全不帶前綴，是為了讓本專案的七個技能在全域目錄按字母排序時集中成一區。
 
@@ -96,8 +100,8 @@ agents-lazy-guide/
 - **不要為了某個 agent 開新檔案。** 差異依序考慮：能不能寫進 `agents.json` →
   能不能寫進該篇的「依你的 Agent」表格 → 才考慮在 `agents.json` 的 `notes` 說明。
   任何情況都不要建 `guides/02-連接-GitHub-codex.md` 這種檔案。
-- **`skills/*/SKILL.md` 的 frontmatter `name` 一律寫不帶前綴的 slug**（例如 `github`），
-  `agent-` 由 `install.ps1` 在安裝時加上，安裝後 `name` 與資料夾名一致（OpenCode 硬性要求）。
+- **`skills/*/SKILL.md` 的 frontmatter `name` 一律寫 `agent-<slug>`**（例如 `agent-github`），
+  與安裝後的資料夾名一致（OpenCode 硬性要求）。`install.ps1` 只驗證不改寫。
   description 也不要提到特定 agent 名稱。
   **前綴必須四家相同** —— 改成各自的 `claude-`／`codex-` 會讓 OpenCode 同時看到三份同主題技能。
 - **根目錄不可出現 `SKILL.md`** —— `npx skills` 會把整個 repo 當成單一 Skill，

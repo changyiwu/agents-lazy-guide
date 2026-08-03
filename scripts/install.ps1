@@ -6,9 +6,9 @@
     把 agents-lazy-guide 的通用 Skills 安裝到指定 AI Agent 的全域技能目錄。
 
 .DESCRIPTION
-    來源只有一份（skills/<編號-slug>/），frontmatter 的 name 寫不帶前綴的 slug。
-    本腳本在安裝時依 agents.json 改寫 name 為 <prefix><slug>，並複製到該 agent 的全域目錄。
-    這是「維護一份、裝到四個 agent」的關鍵：前綴由安裝時產生，不在原始檔裡分岔。
+    來源只有一份（skills/<編號-slug>/），frontmatter 的 name 已經是含前綴的安裝名（agent-<slug>）。
+    本腳本原封不動複製到各 agent 的全域目錄，只驗證 name 等於 agents.json 的 <prefix><slug>，
+    不改寫任何內容 —— 這樣副本與原始檔逐位元組相同，sync-skills 的 hash 比對才會過。
 
 .PARAMETER Agent
     claude / codex / opencode / antigravity / all
@@ -60,14 +60,13 @@ function Resolve-HomePath {
     return $Path
 }
 
-function Set-SkillFrontmatterName {
+function Get-SkillFrontmatterName {
     <#
-        只改第一個 frontmatter 區塊裡的 name:，不動內文。
+        讀出第一個 frontmatter 區塊裡的 name:。
         找不到 frontmatter 時視為錯誤（SKILL.md 一定要有）。
     #>
     param(
-        [Parameter(Mandatory)][string]$Content,
-        [Parameter(Mandatory)][string]$NewName
+        [Parameter(Mandatory)][string]$Content
     )
 
     $lines = $Content -split "`r?`n"
@@ -83,29 +82,13 @@ function Set-SkillFrontmatterName {
         throw 'SKILL.md 的 frontmatter 沒有結束的 ---'
     }
 
-    $found = $false
     for ($i = 1; $i -lt $closeIndex; $i++) {
-        if ($lines[$i] -match '^\s*name\s*:') {
-            $lines[$i] = "name: $NewName"
-            $found = $true
-            break
+        if ($lines[$i] -match '^\s*name\s*:\s*(.+?)\s*$') {
+            return $Matches[1].Trim('"', "'")
         }
     }
-    if (-not $found) {
-        # 沒有 name 就補在 frontmatter 第一行
-        $lines = $lines[0..0] + @("name: $NewName") + $lines[1..($lines.Count - 1)]
-    }
 
-    return ($lines -join "`r`n")
-}
-
-function Write-Utf8NoBom {
-    param(
-        [Parameter(Mandatory)][string]$Path,
-        [Parameter(Mandatory)][string]$Text
-    )
-    $encoding = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($Path, $Text, $encoding)
+    throw 'SKILL.md 的 frontmatter 沒有 name:'
 }
 
 # ---- 決定要處理哪些 agent ----
@@ -171,6 +154,25 @@ foreach ($key in $agentKeys) {
             continue
         }
 
+        # 安裝名以來源 frontmatter 的 name 為準，只驗證它等於 agents.json 的 <prefix><slug>
+        try {
+            $srcName = Get-SkillFrontmatterName -Content (Get-Content -LiteralPath $srcSkill -Raw -Encoding UTF8)
+        } catch {
+            $results.Add([pscustomobject]@{
+                Agent = $agentDef.displayName; Skill = $skillName
+                Status = '失敗'; Path = $destDir; Note = $_.Exception.Message
+            })
+            continue
+        }
+        if ($srcName -ne $skillName) {
+            $results.Add([pscustomobject]@{
+                Agent = $agentDef.displayName; Skill = $skillName
+                Status = '失敗'; Path = $destDir
+                Note = "來源 name 是 $srcName，應為 $skillName（改來源 SKILL.md，不要靠安裝時改寫）"
+            })
+            continue
+        }
+
         $exists = Test-Path -LiteralPath $destDir
         if ($exists -and -not $Force) {
             $results.Add([pscustomobject]@{
@@ -184,7 +186,7 @@ foreach ($key in $agentKeys) {
             $results.Add([pscustomobject]@{
                 Agent = $agentDef.displayName; Skill = $skillName
                 Status = if ($exists) { '將覆蓋' } else { '將安裝' }
-                Path = $destDir; Note = "name 改寫為 $skillName"
+                Path = $destDir; Note = "原樣複製，name 已是 $skillName"
             })
             continue
         }
@@ -192,13 +194,8 @@ foreach ($key in $agentKeys) {
         try {
             New-Item -ItemType Directory -Path $destDir -Force | Out-Null
 
-            # SKILL.md：改寫 frontmatter name 後寫入
-            $raw = Get-Content -LiteralPath $srcSkill -Raw -Encoding UTF8
-            $rewritten = Set-SkillFrontmatterName -Content $raw -NewName $skillName
-            Write-Utf8NoBom -Path (Join-Path $destDir 'SKILL.md') -Text $rewritten
-
-            # 其餘附屬檔案／assets 原樣複製
-            Get-ChildItem -LiteralPath $srcDir -Force | Where-Object { $_.Name -ne 'SKILL.md' } | ForEach-Object {
+            # 全部原樣複製（含 SKILL.md），副本與原始檔逐位元組相同
+            Get-ChildItem -LiteralPath $srcDir -Force | ForEach-Object {
                 Copy-Item -LiteralPath $_.FullName -Destination $destDir -Recurse -Force
             }
 

@@ -20,16 +20,16 @@ tags:
 |------|------|
 | **slug** | 主題的英文短代號，只用**小寫英數與連字號**（`github`、`env-setup`、`gemini-notebook`）。定義在 `agents.json` 的 `topics[].slug`，是整個 repo 的名稱本體。 |
 | **編號** | 兩位數的章節序號（`00`–`05`），只用來維持教學順序與 `guides/` ↔ `skills/` 的對應。**不是名稱的一部分**，不會出現在安裝結果裡。 |
-| **prefix（前綴）** | 安裝時加在 slug 前面的字串，定義在 `agents.json` 每個 agent 的 `prefix`。目前四家統一為 `agent-`。 |
-| **安裝名** | 技能裝到全域目錄後的資料夾名，也是 frontmatter 的 `name`。等於 `<prefix><slug>`。 |
+| **prefix（前綴）** | 加在 slug 前面的字串，定義在 `agents.json` 每個 agent 的 `prefix`。目前四家統一為 `agent-`。`install.ps1` 只拿它**驗證**來源 name，不再改寫。 |
+| **安裝名** | 技能裝到全域目錄後的資料夾名，也是來源 frontmatter 的 `name`。等於 `<prefix><slug>`。 |
 
 同一個主題在不同位置的長相（以 GitHub 為例）：
 
 ```
 agents.json     "slug": "github"        ← 本體
 來源資料夾      skills/02-github/        ← 編號 + slug
-來源 name       name: github             ← 只有 slug，不帶前綴
-安裝後          agent-github             ← prefix + slug（install.ps1 產生）
+來源 name       name: agent-github       ← prefix + slug，直接寫在來源
+安裝後          agent-github             ← 與來源 name 相同（原樣複製）
 ```
 
 > **為什麼 slug 只能用小寫英數與連字號**：這不是本專案的偏好，是工具的硬性要求。
@@ -110,14 +110,19 @@ tags:
 
 ```yaml
 ---
-name: <slug>          # ★ 不帶前綴。install.ps1 安裝時加上 agent-，四家同名
+name: agent-<slug>    # ★ 直接寫含前綴的安裝名，四家同名
 description: <觸發語句>。說「XXX」時載入。
 ---
 ```
 
-> `name` 寫不帶前綴的 slug（`github`），**不要**寫 `agent-github`，更不要寫 `claude-github`。
-> 安裝時 `install.ps1` 會依 `agents.json` 的 `prefix` 加上 `agent-`，並保證
-> `name` 與資料夾名一致（OpenCode 硬性要求，其他三家也相容）。
+> `name` 直接寫**含 `agent-` 前綴**的安裝名（`agent-github`），**不要**寫成 `claude-github`
+> 這種各自前綴。`install.ps1` 只驗證它等於 `agents.json` 的 `<prefix><slug>`，
+> 不一致就報錯並要求改來源；安裝時是**原樣複製**，不改寫任何內容。
+>
+> **為什麼不靠安裝時改寫**：`sync-skills` 以來源 frontmatter 的 `name` 決定安裝名，
+> 並逐檔比對 hash 證明副本一致。若前綴由安裝時加上，來源叫 `github`、副本叫 `agent-github`，
+> 兩邊 name 與內容都對不起來，`sync-skills` 會報錯。
+>
 > description 也不要提到特定 agent 名稱。
 >
 > **前綴四家必須相同**：OpenCode 會同時掃描 `~/.claude/skills` 與 `~/.agents/skills`，
@@ -204,7 +209,7 @@ Windows / macOS / Linux 用明確標題區分，或在步驟零要求 agent 判�
 ## 新增一個主題的檢查清單
 
 - [ ] `guides/<編號>-<標題>.md` 已建立，區塊齊全
-- [ ] `skills/<編號>-<slug>/SKILL.md` 已建立，`name` 為不帶前綴的 slug
+- [ ] `skills/<編號>-<slug>/SKILL.md` 已建立，`name` 為 `agent-<slug>`
 - [ ] `agents.json` 的 `topics` 已加入該主題，`status` 正確
 - [ ] `README.md` 與 `INSTALL.md` 的清單已更新
 - [ ] `scripts/install.ps1 -Agent all -ListOnly` 看得到該主題

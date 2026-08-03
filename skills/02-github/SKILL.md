@@ -1,5 +1,5 @@
 ---
-name: github
+name: agent-github
 description: 連接 GitHub CLI，讓 agent 能管理 repo、commit、push。說「連接 GitHub」「設定 GitHub」時載入。
 ---
 

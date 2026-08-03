@@ -1,5 +1,5 @@
 ---
-name: install-all
+name: agent-install-all
 description: 一次安裝並執行全部六個懶人包技能（環境建置、Gemini Notebook、GitHub、Obsidian、Firebase、生圖）。說「全部安裝」「裝完所有懶人包」「一次安裝全部」時載入。
 ---
 

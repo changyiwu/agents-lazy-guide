@@ -1,5 +1,5 @@
 ---
-name: obsidian
+name: agent-obsidian
 description: 連接 Obsidian vault，讓 agent 讀寫第二大腦筆記（MCPVault 或資料夾授權）。說「連接 Obsidian」「設定 Obsidian vault」時載入。
 ---
 
