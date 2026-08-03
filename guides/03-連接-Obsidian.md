@@ -447,7 +447,7 @@ CLI 結束 session 再啟動。先用 `codex mcp list` 檢查。
 
 > ⚠️ **實際 vault 路徑屬於本機設定**，不要複製回公開教學檔或 commit 到公開 repo。
 
-**重啟**：完全重啟 AntiGravity，先做唯讀列出 vault 根目錄。
+**重啟**：完全重啟 Antigravity（結束 App 再開，不只關視窗），先做唯讀列出 vault 根目錄。
 
 ---
 

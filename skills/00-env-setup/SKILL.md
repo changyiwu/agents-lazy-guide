@@ -30,7 +30,8 @@ GitHub CLI —— 那些全部由 `agent-github` Skill 負責。
 - **OpenCode**：`npm install -g opencode-ai`；`opencode auth list` 檢查供應商，
   未登入時請使用者**在互動式終端**執行 `opencode auth login`（代跑會卡住）。
   不要混用 winget / Scoop / Chocolatey / npm 多種來源。
-- **Antigravity**：IDE 本體與登入由 IDE 自行處理，只需裝 Node.js 與 uv。
+- **Antigravity**：指 **Antigravity 2.0 桌面 App**（獨立 agent 應用，**不是 IDE**）。
+  App 本體與登入由 App 自行處理，只需裝 Node.js 與 uv；設定檔在 `~/.gemini/config/`。
 
 ## 安全規則
 

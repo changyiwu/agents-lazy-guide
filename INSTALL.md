@@ -18,6 +18,8 @@
 | OpenCode | `~/.config/opencode/skills/` |
 | Antigravity | `~/.gemini/config/skills/` |
 
+> **Antigravity 指 Antigravity 2.0 桌面 App**（獨立的 agent 應用），不是程式編輯器／IDE。
+
 技能名稱**四個 agent 完全相同**，統一用 `agent-` 前綴（`agent-github`、`agent-obsidian`…）。
 
 **目錄不存在＝這台電腦沒裝那個工具**，略過即可，不要建目錄、不要當成錯誤。

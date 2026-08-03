@@ -88,6 +88,8 @@ agents-lazy-guide/
 | OpenCode | `~/.config/opencode/skills/` |
 | Antigravity | `~/.gemini/config/skills/` |
 
+> 這裡的 **Antigravity 指 Antigravity 2.0 桌面 App**（獨立的 agent 應用），不是程式編輯器／IDE。
+
 技能名稱四個 agent 相同，統一用 `agent-` 前綴：`agent-github`、`agent-obsidian`、
 `agent-firebase`、`agent-draw`、`agent-env-setup`、`agent-gemini-notebook`、`agent-install-all`。
 

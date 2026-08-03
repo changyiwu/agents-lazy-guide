@@ -19,6 +19,7 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 
 - 2026-08-02：六個主題全部搬移完成、專案初始化、切換上線，技能命名定案為 `agent-<slug>`
 - 2026-08-03：前綴改由來源 `SKILL.md` 直接帶（不再安裝時改寫），`install.ps1` 改為驗證＋原樣複製
+- 2026-08-03：Antigravity 正名為 **Antigravity 2.0 桌面 App**（非 IDE），全 repo 相關描述改寫
 
 ## 目標與路線圖
 
@@ -92,6 +93,9 @@ agents-lazy-guide/
 | Codex | `~/.agents/skills/` | 否 |
 | OpenCode | `~/.config/opencode/skills/` | **是**，另讀 `~/.claude/skills`、`~/.agents/skills` |
 | Antigravity | `~/.gemini/config/skills/` | 否 |
+
+> **Antigravity 一律指 Antigravity 2.0 桌面 App**（獨立的 agent 應用），**不是程式編輯器／IDE**。
+> 文件與技能都不得再以「IDE」稱呼它，也不要沿用舊版 IDE 的行為推論（例如內建生圖）。
 
 完整差異（安裝指令、各 agent 注意事項）以 `agents.json` 為準，**不要在別處另存一份**。
 

@@ -411,7 +411,7 @@ codex mcp add firebase -- npx -y firebase-tools@latest mcp --dir "<含 firebase.
 
 要固定到特定專案，在 args 後加入 `"--dir", "C:\\path\\to\\firebase-project"`。
 
-**重啟**：完全重啟 AntiGravity。**預設只做唯讀查詢**，寫入、建立服務或部署前另外確認。
+**重啟**：完全重啟 Antigravity（結束 App 再開，不只關視窗）。**預設只做唯讀查詢**，寫入、建立服務或部署前另外確認。
 
 ---
 

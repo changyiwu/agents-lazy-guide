@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-08-02",
+  "updated": "2026-08-03",
   "description": "四個 AI Agent 的懶人包差異表。這是整個 repo 唯一記錄 agent 差異的地方，其餘文件一律通用。",
 
   "skillDiscovery": {
@@ -151,13 +151,14 @@
     },
     "antigravity": {
       "displayName": "Antigravity",
+      "productNote": "本 repo 的 Antigravity 一律指 Antigravity 2.0 桌面 App（獨立的 agent 應用），不是程式編輯器／IDE。文件中不得再以「IDE」稱呼它；設定與技能都在 ~/.gemini/config/（mcp_config.json、skills/）。",
       "detectDir": "~/.gemini",
       "skillsDir": "~/.gemini/config/skills",
       "prefix": "agent-",
       "nativeInstall": "scripts/install-skills.ps1 -Skill <skill>",
       "notes": [
-        "舊 repo 已於 2026-08-02 重新編號對齊（03 Obsidian / 04 Firebase / 05 生圖），仍無 00 環境建置（IDE 自帶環境）。",
-        "Antigravity 內建生圖能力，05 生圖的外部 API 設定對它為選用。",
+        "舊 repo 已於 2026-08-02 重新編號對齊（03 Obsidian / 04 Firebase / 05 生圖），仍無 00 環境建置（App 本體與登入由 App 自行處理）。",
+        "是否內建生圖隨 App 版本而異，走路線 A 前要當場確認；05 生圖的外部 API 設定對它為選用。",
         "預設只做唯讀驗收，建立／刪除遠端資源需另外取得授權。"
       ]
     }

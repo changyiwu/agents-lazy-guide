@@ -420,12 +420,12 @@ nlm setup add opencode
 > ```
 >
 > 截至 `notebooklm-mcp-cli 0.9.4`，它顯示的是 `~/.gemini/antigravity/mcp_config.json`，
-> **但 AntiGravity IDE 2.0 實際讀取的是 `~/.gemini/config/mcp_config.json`**，兩者不同。
+> **但 Antigravity 2.0 桌面 App 實際讀取的是 `~/.gemini/config/mcp_config.json`**，兩者不同。
 > 未來版本若修正，也必須先確認它明確顯示正確路徑，才能在取得同意後使用自動設定。
 >
 > 同樣不需要 `nlm skill install antigravity`。
 
-在 AntiGravity 的 MCP 管理介面新增 server，或依「合併流程」編輯
+在 Antigravity 的 MCP 管理介面新增 server，或依「合併流程」編輯
 `~/.gemini/config/mcp_config.json`，**只新增或更新 `.mcpServers.gemini-notebook`**：
 
 ```json
@@ -442,7 +442,7 @@ nlm setup add opencode
 若舊的 `.mcpServers.notebooklm` 或 `.mcpServers.notebooklm-mcp` 已存在，
 先顯示新舊差異，取得同意後移除舊 key。
 
-**重啟**：完全重啟 AntiGravity，確認 `gemini-notebook` 顯示已連線
+**重啟**：完全重啟 Antigravity（結束 App 再開，不只關視窗），確認 `gemini-notebook` 顯示已連線
 （執行命令仍是 `notebooklm-mcp`）。
 
 ---
@@ -532,6 +532,7 @@ Agent MCP 連線：已連線 / 失敗
 | 日期 | 版本 | 更新內容 |
 |------|------|---------|
 | 2026-08-02 | v1.0 | 合併版：整併四份 #01，MCP 註冊四種做法收進「依你的 Agent」，補上通用合併流程 |
+| 2026-08-03 | v1.1 | 「AntiGravity IDE 2.0」正名為 **Antigravity 2.0 桌面 App**（非 IDE），設定檔路徑結論不變 |
 
 ---
 

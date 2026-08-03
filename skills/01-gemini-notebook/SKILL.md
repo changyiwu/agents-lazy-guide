@@ -51,7 +51,7 @@ description: 連接 Gemini Notebook（原 NotebookLM）MCP，讓 agent 讀寫 Go
 - **OpenCode**：`nlm setup add opencode` 即可。失敗才手動編 `opencode.json` 的 `mcp` 區塊，
   command 指向 **`notebooklm-mcp` 不是 `nlm`**。用 `opencode mcp list` 驗證。
 - **Antigravity**：**不要用 `nlm setup add antigravity`** —— 它顯示 `~/.gemini/antigravity/mcp_config.json`，
-  但 IDE 2.0 實際讀 `~/.gemini/config/mcp_config.json`。手動合併 `.mcpServers.gemini-notebook`。
+  但 Antigravity 2.0 桌面 App 實際讀 `~/.gemini/config/mcp_config.json`。手動合併 `.mcpServers.gemini-notebook`。
 
 **不要執行 `nlm skill install <agent>`**（會多裝一份上游 Skill，MCP 連線不需要）。
 **`nlm mcp` 已失效**，不可使用。

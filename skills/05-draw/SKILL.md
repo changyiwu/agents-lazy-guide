@@ -10,7 +10,8 @@ description: 生圖技能。當使用者要求「畫一張」、「生一張圖�
 ## 先選路線
 
 1. **路線 A：agent 內建生圖** —— 先確認目前介面**確實存在**可呼叫的內建生圖工具
-   （Codex 有 `imagegen`；Antigravity 視 IDE 版本）。存在就走這條，不需要 API Key。
+   （Codex 有 `imagegen`；Antigravity 2.0 桌面 App 視版本而定，要當場確認）。
+   存在就走這條，不需要 API Key。
    **找不到就不要假裝有這個能力** —— 回報現況並詢問是否改走路線 B。
    也不要因為目錄裡有腳本就自動改走 API。
 2. **路線 B：OpenAI API + 同目錄的 `draw.py`** —— Claude Code 與 OpenCode 沒有內建生圖，
