@@ -1,0 +1,7 @@
+# 刻意保留平台專屬寫法的檔案，由 cross-device-agent-skills/tools/check-platform.py 讀取。
+# 列在這裡的檔案整份跳過檢查（含 BOM），加進來之前先確認是「設計如此」不是「還沒改」。
+
+# 目標讀者是照著懶人包一步步做的初學者，他們的 Windows 預設只有 PowerShell 5.1（沒有 pwsh 7），
+# 而指南就是教他們用 powershell.exe 呼叫這支。5.1 會把無 BOM 的 UTF-8 當成 ANSI 讀，
+# 中文全部變亂碼、腳本在 parse 階段就失敗——所以這裡的 BOM 是必要的，不是遺毒。
+scripts/install.ps1
