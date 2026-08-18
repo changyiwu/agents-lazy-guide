@@ -1,6 +1,6 @@
 ---
 name: agent-install-all
-description: 一次安裝並執行全部六個懶人包技能（環境建置、Gemini Notebook、GitHub、Obsidian、Firebase、生圖）。說「全部安裝」「裝完所有懶人包」「一次安裝全部」時載入。
+description: 一次安裝並執行全部七個懶人包技能（環境建置、Gemini Notebook、GitHub、Obsidian、Firebase、生圖、Cloudflare）。說「全部安裝」「裝完所有懶人包」「一次安裝全部」時載入。
 ---
 
 # 一次安裝全部
@@ -12,7 +12,7 @@ description: 一次安裝並執行全部六個懶人包技能（環境建置、G
 > 💡 只要完成基礎環境、暫時不處理 GitHub 帳號的話，**不要用「全部安裝」** ——
 > 只安裝並執行 `agent-env-setup` 即可。
 
-## 六個項目
+## 七個項目
 
 | 編號 | 技能 | 內容 | 前置需求 |
 |------|------|------|---------|
@@ -22,6 +22,7 @@ description: 一次安裝並執行全部六個懶人包技能（環境建置、G
 | 03 | `agent-obsidian` | Obsidian vault 連接（MCPVault 或資料夾授權） | Node.js、vault |
 | 04 | `agent-firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
 | 05 | `agent-draw` | 生圖（agent 內建或 OpenAI gpt-image-2） | uv、（路線 B）OpenAI API Key |
+| 06 | `agent-cloudflare` | Wrangler 登入與部署靜態網站到 Cloudflare Workers | Node.js 20+、Cloudflare 帳號 |
 
 安裝後的名稱**四個 agent 相同**，就是上表的名稱。共用 `agent-` 前綴讓它們在全域目錄集中成一區。
 
@@ -37,7 +38,7 @@ description: 一次安裝並執行全部六個懶人包技能（環境建置、G
 
    先看會做什麼而不寫入：加 `-ListOnly`。更新既有安裝：加 `-Force`（預設不覆蓋）。
 
-4. **逐項確認是否要執行 00–05**。已安裝且驗證正常的外部工具可以跳過執行，
+4. **逐項確認是否要執行 00–06**。已安裝且驗證正常的外部工具可以跳過執行，
    但對應的 Skill 本身仍須保留在全域目錄。
 5. **驗收**：確認 `<全域技能目錄>/agent-<slug>/SKILL.md` 存在，
    且 frontmatter `name` 與資料夾名稱一致。

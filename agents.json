@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-08-03",
+  "updated": "2026-08-18",
   "description": "四個 AI Agent 的懶人包差異表。這是整個 repo 唯一記錄 agent 差異的地方，其餘文件一律通用。",
 
   "skillDiscovery": {
@@ -102,6 +102,14 @@
       "guide": "guides/05-生圖.md",
       "skillDir": "skills/05-draw",
       "status": "已完成"
+    },
+    {
+      "no": "06",
+      "slug": "cloudflare",
+      "title": "連接 Cloudflare",
+      "guide": "guides/06-連接-Cloudflare.md",
+      "skillDir": "skills/06-cloudflare",
+      "status": "初版（未實測）"
     },
     {
       "no": "--",
