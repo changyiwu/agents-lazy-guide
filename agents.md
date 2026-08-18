@@ -115,6 +115,8 @@ agents-lazy-guide/
 - 舊四個 repo 保留不刪（`claude-code-lazy-packs` 是公開 repo，刪除會斷他人連結）。
 - 本專案改編自三師爸（宋睿偉）的 `claude-code-lazy-packs`（MIT），**致謝須保留於 README.md**。
 - **`agents.json` 的 `prefix` 與來源 `name` 必須一致**，否則 `install.ps1` 會擋下。要改前綴得**同時改兩處**，並清掉舊名稱的孤兒資料夾——名稱不同不會互相覆蓋，舊的會留在原地。
+- **涉及對外發布的步驟，一律寫成「由使用者自己執行」**（例如 #06 的 `wrangler deploy`）。技能可以準備好一切，但按下發布鍵的必須是人。
+- **需要瀏覽器 OAuth 的登入一律標 🖐️ 手動**（`wrangler login`、`gh auth login`、`firebase login`…）。四家 agent 的內建執行環境都不是互動式終端，agent 代跑會卡住；也不得改用「請把 token 貼給我」的替代做法。
 - **技能目錄會被其他 session 或 `sync-skills` 同時改動**。要回報目錄狀態就**當場重列一次**，不要引用記憶或 `handoff.md` 的舊紀錄。
 - **#04 Firebase 的預設是「完全不碰線上安全規則」**（採 Claude 版最新做法）；Codex 舊版的規則部署流程已降級為需明確同意的進階章節。改動這段前先確認這個取捨還成立。
 
