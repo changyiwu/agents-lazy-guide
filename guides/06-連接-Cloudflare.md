@@ -56,7 +56,8 @@ tags:
 - [ ] 已安裝 Node.js 20 以上（沒有的話先做懶人包 #00 環境建置）
 - [ ] 有一個能跑 `npm run build` 並產出靜態檔案的專案（純 HTML 網站也可以，見步驟三）
 - [ ] 能開啟瀏覽器完成 OAuth 授權
-- [ ] 要接自動部署的話：專案已推上 GitHub 或 GitLab（可參考懶人包 #02 連接 GitHub）
+- [ ] 要接自動部署的話：專案已推上 GitHub 或 GitLab（可參考懶人包 #02 連接 GitHub）。
+      走 GitHub Actions 那條路線（步驟九路線 B）還需要 `gh` 已登入
 
 ---
 
@@ -280,7 +281,25 @@ npx wrangler deploy
 
 ---
 
-## 步驟九：接上自動部署（Workers Builds）
+## 步驟九：接上自動部署
+
+有兩條路線，**擇一，不要兩條都接**——同時接會讓每次 push 觸發兩次部署、互相覆蓋。
+
+| | A. Workers Builds（預設） | B. GitHub Actions |
+|---|---|---|
+| 你要做的 | 在後台授權 Cloudflare 的 GitHub App，**每個新專案都要點一次** | 產一顆 API Token、貼一次 secret |
+| Agent 能代做的 | 幾乎沒有（授權是 OAuth，沒有 CLI 對應） | 除了貼 secret 以外全部 |
+| 設定放哪 | Cloudflare 後台，之後要改都得進去點 | repo 裡的 `.yml`，進版控、可 review |
+| 部署前能不能擋測試 | 不行 | **可以**，測試沒過就不上線 |
+| 有沒有長期憑證 | 沒有 | 有一顆 API Token |
+
+**沒在用密碼管理器的話建議選 A。** B 的 token 只會完整顯示一次，沒存下來的話，
+下一個專案要再用就得重產一顆——而 A 每次雖然要點，但不必保管任何東西。
+
+反過來說，**已經接好 B 的專案不必為了這個理由拆掉**：token 存在 GitHub 的加密
+secret store 裡，你不需要再看到它，只有「要用到第二個 repo」時才會需要重產。
+
+### 路線 A：Workers Builds
 
 🖐️ **這一步要使用者自己在後台做**，沒有 CLI 指令可以完成。
 
@@ -307,6 +326,69 @@ npx wrangler deploy
 
 接上之後，「部署」這件事就從你手上移交給 CI 了：push 就上線，不用再手動跑 `wrangler deploy`。
 記得同步更新專案文件，不要留著「要手動部署」的過期說明。
+
+### 路線 B：GitHub Actions
+
+只有第 1、2 步要你動手，其餘可以交給 agent。
+
+**1. 產一顆 API Token**（🖐️ 你自己做）
+
+[dash.cloudflare.com](https://dash.cloudflare.com) → 右上頭像 → **Profile** → **API Tokens**
+→ **Create Token** → 選 **"Edit Cloudflare Workers"** 模板 → 建立。
+
+- **Account Resources**：Include 你自己的帳號
+- **Zone Resources**：模板會自動帶上，那是給**自訂網域**路由用的。走 `*.workers.dev`
+  用不到，留著也不會多給出什麼
+- **有效期限**：如果設了到期日，**到期那天自動部署會無聲失效**，先想清楚
+
+> 按下 Create 之後 **token 只會完整顯示這一次**，關掉就看不到了。
+
+**2. 把 token 貼進 GitHub**（🖐️ 你自己做）
+
+```bash
+gh secret set CLOUDFLARE_API_TOKEN --repo <你的帳號>/<專案>
+```
+
+提示出現時貼上、Enter。值直接進 GitHub 的加密 secret store，**不經過對話、不進任何檔案**。
+不要把 token 貼給 agent 看——這一步刻意由你自己做。
+
+**3. 讓 agent 建立 workflow**
+
+請 agent 在 `.github/workflows/deploy-cloudflare.yml` 寫入部署流程，要點有四個：
+
+| 要點 | 為什麼 |
+|---|---|
+| `on.push` 加 `paths` 過濾 | 只有前端目錄或 `wrangler.jsonc` 變動才跑，不浪費 Actions 分鐘數 |
+| 部署前先跑專案測試 | 測試沒過就不上線，這是路線 A 做不到的 |
+| `permissions: contents: read` | 這支只需要讀原始碼，不給任何寫入權限 |
+| **`wranglerVersion: "4"`** | 見下方警告，**漏了一定失敗** |
+
+> ⚠️ **`wranglerVersion` 一定要指定 `"4"`**。`cloudflare/wrangler-action@v3` 預設安裝的是
+> wrangler **3**，而「沒有 `main`、只有 `assets`」的純靜態 Worker 是 wrangler 4 才支援的寫法，
+> 用 3 會直接報 `Missing entry-point`。你本機裝的通常已經是 4.x，所以**這個坑只在 CI 現形**，
+> 症狀是「本機部署得好好的，CI 卻說找不到進入點」。
+
+**驗證方式**：push 之後看 GitHub 的 Actions 頁面，或用指令：
+
+```bash
+gh run watch <run-id> --exit-status
+```
+
+失敗就用 `gh run view <run-id> --log-failed` 看實際錯誤。也可以用
+`npx wrangler deployments list --name <worker 名>` 確認 Cloudflare 上真的多了一個版本，
+比對時間戳就知道是不是 CI 推的。
+
+### 從 B 換回 A
+
+順序反了會有一段空窗期，Cloudflare 站更新不了：
+
+1. 先在後台接好 Workers Builds
+2. 確認它成功自動部署一次
+3. **刪掉 repo 裡的 workflow 檔**——留著會每次 push 都紅叉，兩套並存還會互相覆蓋
+4. 最後才刪 Cloudflare 的 API Token 與 GitHub secret
+
+> 刪掉 token **不會影響已經上線的網站**，它照常運作。token 只用在「部署」這個動作。
+> 壞掉的是自動部署，而且失敗得很安靜：CI 紅叉，網站停在舊版本，你不去看不會發現。
 
 ---
 
@@ -364,7 +446,8 @@ npx wrangler deploy
 |---|---|
 | 解除本機授權 | `npx wrangler logout`，之後重跑步驟二 |
 | 重設專案設定 | 刪掉 `wrangler.jsonc`、`_headers`、`.wrangler/`，從步驟四重來 |
-| 取消自動部署 | 後台該 Worker → Settings → Build → 中斷 Git 連結 |
+| 取消自動部署（路線 A） | 後台該 Worker → Settings → Build → 中斷 Git 連結 |
+| 取消自動部署（路線 B） | 刪掉 workflow 檔，再刪 GitHub secret 與 Cloudflare 的 API Token |
 | 網站下線 | 🖐️ 使用者自己在後台刪除該 Worker（**不可逆**，agent 不得代為執行） |
 
 刪除 Worker 後，該網址會立刻回 404。如果網址已經分享出去，考慮先保留並改成轉址，

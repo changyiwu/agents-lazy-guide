@@ -36,15 +36,52 @@ MCP 是選用的加值品，不裝也不影響部署。
    快取標頭都正確後再上線。
 9. **（選用）首次部署**：**會公開到網路上**，須另外取得明確同意。
    先 `npm run build`，再 🖐️ **由使用者執行** `npx wrangler deploy`。
-10. **（選用）接自動部署**：🖐️ 使用者在後台 → 該 Worker → Settings → Build → Connect 連結
-    Git repo，build 指令填建置指令、deploy 指令用預設值、production branch 選主要分支。
-    之後 push 就會自動上線。
+10. **（選用）接自動部署**：**先問使用者要哪一條路線**，兩條都可行、取捨不同。
+    **兩條不可並存**——同時接會讓每次 push 觸發兩次部署、互相覆蓋。
+
+    | | A. 後台 Connect（預設） | B. GitHub Actions |
+    |---|---|---|
+    | 使用者要做的 | 在後台授權 GitHub App（每個新站都要點一次） | 貼一次 `CLOUDFLARE_API_TOKEN` secret |
+    | agent 能代做的 | 幾乎沒有（授權是 OAuth，無 CLI 對應） | 除了貼 secret 以外全部 |
+    | 設定放哪 | 後台，改動都要進去點 | repo 裡的 yml，進版控、可 review |
+    | 能否部署前擋測試 | 否 | **能**（測試沒過就不上線） |
+    | 長期憑證 | 無 | 有一顆 API Token 存在 |
+
+    **沒有密碼管理器的人建議選 A**：B 的 token 只會完整顯示一次，沒存下來的話，
+    下一個 repo 要再用就得重產一顆。（但已經設好的 B 不必為此拆掉——token 存在
+    GitHub 的加密 secret store 裡，使用者不需要再看到它，只有「要用到第二個 repo」
+    才會需要重產。）
+
+    **路線 A：後台 Connect**
+    🖐️ 使用者在後台 → 該 Worker → Settings → Build → Connect 連結 Git repo，
+    build 指令填建置指令、deploy 指令用預設值、production branch 選主要分支。
+
+    **路線 B：GitHub Actions**
+    1. 🖐️ 使用者在後台 → 頭像 → Profile → API Tokens → Create Token →
+       **"Edit Cloudflare Workers"** 模板 → 建立。Account Resources 選自己的帳號即可；
+       模板附帶的 Zone Resources 是給自訂網域路由用的，走 `*.workers.dev` 用不到、
+       留著也無妨。**若設了到期日，到期那天自動部署會無聲失效**，要先提醒。
+    2. 🖐️ **使用者自己**執行 `gh secret set CLOUDFLARE_API_TOKEN --repo <owner>/<repo>`
+       並在提示時貼上。**agent 不得代跑、不得要求把 token 貼進對話**。
+    3. agent 建立 `.github/workflows/deploy-cloudflare.yml`：`on.push` 加 `paths`
+       過濾（只有前端目錄、`wrangler.jsonc` 或該檔本身變動才跑），部署前先跑專案測試，
+       `permissions` 只給 `contents: read`，最後用 `cloudflare/wrangler-action@v3`。
+    4. **`wranglerVersion` 一定要指定 `"4"`**：action 預設裝 wrangler 3，而「沒有
+       `main`、只有 `assets`」的純靜態 Worker 是 wrangler 4 才支援的寫法，用 3 會直接報
+       `Missing entry-point`。本機通常已是 4.x，所以這個坑只在 CI 現形。
+    5. 推上去後用 `gh run watch <id> --exit-status` 確認，失敗就 `gh run view --log-failed`。
+
+    **從 B 換回 A**（順序反了會有一段空窗期，Cloudflare 站更新不了）：
+    先接好 A → 確認自動部署成功一次 → 刪掉 workflow 檔 → 最後才刪 token 與 secret。
 
 ## 安全規則
 
 - **部署是對外發布，每次都要取得明確同意**；agent 不得自行執行 `wrangler deploy`。
 - 不自動建立自訂網域、不改 DNS、不建立或刪除任何 Worker、KV、R2、D1 資源。
-- 不要求使用者把 API Token 貼進對話、Markdown 或 repo；一律走 `wrangler login` 的 OAuth。
+- **不要求使用者把 API Token 貼進對話、Markdown 或 repo**；本機一律走 `wrangler login` 的 OAuth。
+  唯一的例外是步驟 10 路線 B 的 CI 憑證：那顆 token 由**使用者自己**用 `gh secret set` 貼進
+  GitHub 的加密 secret store，**不經過對話、不進任何檔案**，所以不違反本條。agent 全程看不到它，
+  也不得代跑那道指令或要求使用者把值貼出來。
 - 修改既有的 `wrangler.jsonc`、`.gitignore`、lint 設定前，先顯示現值再改。
 - 「安裝 Skill」不等於「授權執行它」，步驟 6 之後每一項都要逐項確認。
 
@@ -56,4 +93,4 @@ MCP 是選用的加值品，不裝也不影響部署。
 ## 回報
 
 Node 與 Wrangler 版本、登入帳號、帳號子網域、Worker 名稱與網址、產生或修改的檔案清單、
-本機驗證結果、部署狀態、自動部署連結狀態、使用者仍需自己完成的互動步驟。
+本機驗證結果、部署狀態、自動部署走哪一條路線與其狀態、使用者仍需自己完成的互動步驟。
