@@ -113,7 +113,7 @@ agents-lazy-guide/
 - **新增或修改主題後**，同步更新 `agents.json` 的 `topics`、`README.md`、`INSTALL.md` 三處清單。
 - 合併既有內容時**取聯集**，四份來源都要讀完再動筆，不要挑一份當基底。
 - 舊四個 repo 保留不刪（`claude-code-lazy-packs` 是公開 repo，刪除會斷他人連結）。
-- 本專案改編自三師爸（宋睿偉）的 `claude-code-lazy-packs`（MIT），**致謝須保留於 README.md**。
+- 本專案改編自原作者三師爸的 `claude-code-lazy-packs`（MIT），**致謝須保留於 README.md**。
 - **`agents.json` 的 `prefix` 與來源 `name` 必須一致**，否則 `install.ps1` 會擋下。要改前綴得**同時改兩處**，並清掉舊名稱的孤兒資料夾——名稱不同不會互相覆蓋，舊的會留在原地。
 - **涉及對外發布的步驟，一律寫成「由使用者自己執行」**（例如 #06 的 `wrangler deploy`）。技能可以準備好一切，但按下發布鍵的必須是人。
 - **需要瀏覽器 OAuth 的登入一律標 🖐️ 手動**（`wrangler login`、`gh auth login`、`firebase login`…）。四家 agent 的內建執行環境都不是互動式終端，agent 代跑會卡住；也不得改用「請把 token 貼給我」的替代做法。

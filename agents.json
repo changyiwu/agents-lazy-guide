@@ -190,6 +190,6 @@
       "../opencode-lazy-packs",
       "../antigravity-lazy-pack"
     ],
-    "attribution": "本專案改編自 三師爸（宋睿偉）的 claude-code-lazy-packs（MIT）。致謝須保留於 README.md。"
+    "attribution": "本專案改編自原作者三師爸的 claude-code-lazy-packs（MIT）。致謝須保留於 README.md。"
   }
 }
