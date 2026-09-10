@@ -39,6 +39,7 @@
 | 04 | `skills/04-firebase` | `agent-firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
 | 05 | `skills/05-draw` | `agent-draw` | 生圖（內建或 gpt-image-2），含 `draw.py` | uv |
 | 06 | `skills/06-cloudflare` | `agent-cloudflare` | Wrangler 登入與部署靜態網站到 Workers | Node.js 20+、Cloudflare 帳號 |
+| 07 | `skills/07-comfyui` | `agent-comfyui` | 用 comfy-cli 操作本機 ComfyUI：改參數、送出、取回生成結果 | uv、執行中的 ComfyUI |
 | — | `skills/install-all` | `agent-install-all` | 一次安裝全部 | 無 |
 
 以 Claude Code 為例，02 安裝後就是 `~/.claude/skills/agent-github/SKILL.md`。
@@ -96,7 +97,7 @@ Claude Code 與 Codex 的副本它也看得到。若像舊 repo 那樣用**各�
 **四家同名之後，OpenCode 會自動去重成一份**（first-match-wins）。
 
 至於為什麼不乾脆完全不帶前綴：純 slug（`github`、`draw`）在全域技能目錄裡
-按字母排序會散落各處，本專案的七個技能看不出是一組；而且泛用名比較容易誤觸發。
+按字母排序會散落各處，本專案的技能看不出是一組；而且泛用名比較容易誤觸發。
 共用前綴 `agent-` 讓它們集中成一區，又不影響去重。
 
 > 實測（2026-08-02，opencode 1.17.11）：四個技能目錄共 64 個資料夾，

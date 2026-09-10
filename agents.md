@@ -20,6 +20,8 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 - 2026-08-02：六個主題全部搬移完成、專案初始化、切換上線，技能命名定案為 `agent-<slug>`
 - 2026-08-03：前綴改由來源 `SKILL.md` 直接帶（不再安裝時改寫），`install.ps1` 改為驗證＋原樣複製
 - 2026-08-03：Antigravity 正名為 **Antigravity 2.0 桌面 App**（非 IDE），全 repo 相關描述改寫
+- 2026-08-18：新增 #06 連接 Cloudflare
+- 2026-09-10：新增 #07 連接 ComfyUI，定案走官方 `comfy-cli`（不走 MCP）
 
 ## 目標與路線圖
 
@@ -45,7 +47,7 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
    `name` 決定安裝名並逐檔比對 hash，安裝時改寫會讓來源（`github`）與副本（`agent-github`）
    對不起來而報錯。`install.ps1` 現在只**驗證** `name == <prefix><slug>`，不改寫、原樣複製。
 
-選 `agent-` 而非完全不帶前綴，是為了讓本專案的七個技能在全域目錄按字母排序時集中成一區。
+選 `agent-` 而非完全不帶前綴，是為了讓本專案的技能在全域目錄按字母排序時集中成一區。
 
 ## 資料夾結構
 
@@ -64,7 +66,9 @@ agents-lazy-guide/
 │   ├── 02-連接-GitHub.md
 │   ├── 03-連接-Obsidian.md
 │   ├── 04-連接-Firebase.md
-│   └── 05-生圖.md
+│   ├── 05-生圖.md
+│   ├── 06-連接-Cloudflare.md
+│   └── 07-連接-ComfyUI.md
 ├── skills/              agent 執行的精簡步驟，一主題一份
 │   ├── 00-env-setup/SKILL.md
 │   ├── 01-gemini-notebook/SKILL.md
@@ -72,6 +76,8 @@ agents-lazy-guide/
 │   ├── 03-obsidian/SKILL.md
 │   ├── 04-firebase/SKILL.md
 │   ├── 05-draw/SKILL.md ＋ draw.py
+│   ├── 06-cloudflare/SKILL.md
+│   ├── 07-comfyui/SKILL.md
 │   └── install-all/SKILL.md
 └── scripts/
     └── install.ps1      讀 agents.json，裝到各 agent 的正確目錄
@@ -122,6 +128,7 @@ agents-lazy-guide/
 - **需要瀏覽器 OAuth 的登入一律標 🖐️ 手動**（`wrangler login`、`gh auth login`、`firebase login`…）。四家 agent 的內建執行環境都不是互動式終端，agent 代跑會卡住；也不得改用「請把 token 貼給我」的替代做法。
 - **技能目錄會被其他 session 或 `sync-skills` 同時改動**。要回報目錄狀態就**當場重列一次**，不要引用記憶或 `handoff.md` 的舊紀錄。
 - **#04 Firebase 的預設是「完全不碰線上安全規則」**（採 Claude 版最新做法）；Codex 舊版的規則部署流程已降級為需明確同意的進階章節。改動這段前先確認這個取捨還成立。
+- **#07 ComfyUI 一律走官方 `comfy-cli`，不走 MCP，也不執行 `comfy skills install`**（它會寫入 `~/.claude/` 與家目錄的 `AGENTS.md`，繞過本 repo 的安裝規則）。需要官方深入資料時用 `comfy skills show` 臨時讀。改動這段前先確認這個取捨還成立。
 
 ## 三個檔案的職責（依「時效性」分家，不是依「詳細程度」）
 

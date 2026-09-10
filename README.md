@@ -54,10 +54,11 @@ powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent claude -To
 | 04 | 連接 Firebase 資料庫 | [教學](guides/04-連接-Firebase.md) | `skills/04-firebase` |
 | 05 | 生圖 | [教學](guides/05-生圖.md) | `skills/05-draw`（含 `draw.py`） |
 | 06 | 連接 Cloudflare | [教學](guides/06-連接-Cloudflare.md) | `skills/06-cloudflare` |
+| 07 | 連接 ComfyUI | [教學](guides/07-連接-ComfyUI.md) | `skills/07-comfyui` |
 | — | 一次安裝全部 | — | `skills/install-all` |
 
-> 六個主題全部搬移完成，2026-08-18 新增 #06 Cloudflare。原本四份懶人包共 23 份教學 MD、
-> 26 份 SKILL.md，現在是 7 份教學 + 8 份技能。
+> 六個主題全部搬移完成，2026-08-18 新增 #06 Cloudflare，2026-09-10 新增 #07 ComfyUI。
+> 原本四份懶人包共 23 份教學 MD、26 份 SKILL.md，現在是 8 份教學 + 9 份技能。
 
 ---
 
@@ -93,14 +94,14 @@ agents-lazy-guide/
 
 技能名稱四個 agent 相同，統一用 `agent-` 前綴：`agent-github`、`agent-obsidian`、
 `agent-firebase`、`agent-draw`、`agent-env-setup`、`agent-gemini-notebook`、`agent-cloudflare`、
-`agent-install-all`。
+`agent-comfyui`、`agent-install-all`。
 
 > **重點是「四家同名」，不是「有沒有前綴」。** OpenCode 會同時掃描 `~/.claude/skills`
 > 與 `~/.agents/skills`，所以用**各自**的前綴（`claude-github`／`codex-github`／
 > `opencode-github`）會讓同一主題在 OpenCode 裡出現三份；四家同名則會被自動去重成一份。
 > 實測（opencode 1.17.11）：切換前載入 35 個技能、六主題佔 18 份；切換後 23 個、六主題各 1 份。
 >
-> 前綴選 `agent-` 而非完全不帶，是為了讓本專案的七個技能在全域目錄裡集中成一區
+> 前綴選 `agent-` 而非完全不帶，是為了讓本專案的技能在全域目錄裡集中成一區
 > ——純 slug 按字母排序會散落各處，也比較容易誤觸發。
 
 完整差異（安裝指令、探索路徑、各 agent 注意事項）見 [`agents.json`](agents.json)。
@@ -110,7 +111,7 @@ agents-lazy-guide/
 ## 目前狀態：已安裝（2026-08-02）
 
 六個主題全部搬移完成，並已切換到四個 agent 的全域目錄。
-**#06 Cloudflare 於 2026-08-18 新增，尚未安裝到任何 agent**（見下方重新安裝指令）。
+**#07 ComfyUI 於 2026-09-10 新增，尚未安裝到任何 agent**（見下方重新安裝指令）。
 舊 repo 留下的 24 個各自前綴技能（`claude-*`／`codex-*`／`opencode-*`／`antigravity-*`）已清除。
 
 重新安裝或更新：

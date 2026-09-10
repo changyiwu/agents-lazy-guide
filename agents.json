@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-08-18",
+  "updated": "2026-09-10",
   "description": "四個 AI Agent 的懶人包差異表。這是整個 repo 唯一記錄 agent 差異的地方，其餘文件一律通用。",
 
   "skillDiscovery": {
@@ -110,6 +110,14 @@
       "guide": "guides/06-連接-Cloudflare.md",
       "skillDir": "skills/06-cloudflare",
       "status": "初版（未實測）"
+    },
+    {
+      "no": "07",
+      "slug": "comfyui",
+      "title": "連接 ComfyUI",
+      "guide": "guides/07-連接-ComfyUI.md",
+      "skillDir": "skills/07-comfyui",
+      "status": "初版（生圖已實測，音樂與影片未實測）"
     },
     {
       "no": "--",
