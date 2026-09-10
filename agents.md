@@ -96,6 +96,9 @@ agents-lazy-guide/
 
 > **Antigravity 一律指 Antigravity 2.0 桌面 App**（獨立的 agent 應用），**不是程式編輯器／IDE**。
 > 文件與技能都不得再以「IDE」稱呼它，也不要沿用舊版 IDE 的行為推論（例如內建生圖）。
+>
+> `~/.gemini/antigravity-cli/` 目前**刻意不納入文件**，只支援桌面 App。要支援 CLI 時，先查證它讀哪個技能／MCP 路徑再補，
+> **不得沿用桌面 App 的 `~/.gemini/config/`**。
 
 完整差異（安裝指令、各 agent 注意事項）以 `agents.json` 為準，**不要在別處另存一份**。
 
