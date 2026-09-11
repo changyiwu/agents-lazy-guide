@@ -2,7 +2,7 @@
 title: 'AI Agent 懶人包 #07：連接 ComfyUI'
 date: '2026-09-11'
 type: 懶人包
-version: v0.3
+version: v0.4
 status: 初版（生圖已實測，音樂與影片未實測）
 tags:
   - 懶人包
@@ -13,7 +13,7 @@ tags:
 
 # 懶人包 #07：連接 ComfyUI
 
-**版本** v0.3｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.4｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -115,25 +115,41 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
 
    | 要什麼 | 從哪裡讀 |
    |---|---|
-   | 安裝位置、實例 id | `%APPDATA%\Comfy Desktop\installations.json` 的 `installPath`、`id`（`sourceId` 不是 `cloud` 的那一筆） |
+   | 安裝位置、實例 id | `%APPDATA%\Comfy Desktop\installations.json` 的 `installPath`、`id`（取 `sourceId` 不是 `cloud` 的那一筆；`Comfy Cloud` 那筆沒有 `installPath`） |
    | 模型路徑設定檔 | `%APPDATA%\Comfy Desktop\instance-model-paths\<實例 id>.yaml` |
    | 輸入、輸出資料夾 | `%APPDATA%\Comfy Desktop\settings.json` 的 `inputDir`、`outputDir` |
 
 2. **Python 一定要用 `<installPath>\ComfyUI\.venv\Scripts\python.exe`**。
    同層的 `<installPath>\standalone-env\python.exe` 看起來也像，但**沒有 torch**，一跑就 `ModuleNotFoundError`。
 3. **確認 Desktop 沒有開著**，否則兩個行程會搶同一個埠。
-4. **放背景啟動**（工作目錄設在 `<installPath>\ComfyUI`，記下 PID）：
+4. **用 `Start-Process` 放背景啟動**，工作目錄設在 `<installPath>\ComfyUI`：
 
    ```powershell
-   & "<installPath>\ComfyUI\.venv\Scripts\python.exe" main.py `
-     --listen 127.0.0.1 --port 8188 --disable-auto-launch `
-     --extra-model-paths-config "<模型路徑設定檔>" `
-     --output-directory "<outputDir>" --input-directory "<inputDir>"
+   $p = Start-Process -FilePath "<installPath>\ComfyUI\.venv\Scripts\python.exe" `
+     -WorkingDirectory "<installPath>\ComfyUI" -WindowStyle Hidden -PassThru `
+     -ArgumentList "main.py --listen 127.0.0.1 --port 8188 --disable-auto-launch --extra-model-paths-config `"<模型路徑設定檔>`" --output-directory `"<outputDir>`" --input-directory `"<inputDir>`""
+   $p.Id   # 記下來，停止時用
    ```
 
-   參數照 Desktop 的設定帶齊，模型與輸入、輸出資料夾才會和 Desktop 共用。`--listen` 只綁 `127.0.0.1`，
-   不要改成 `0.0.0.0`（會讓同網段的人都能送工作）。載入需要一點時間，輪詢 `system_stats` 到有回應再繼續。
-5. **用完停掉自己啟動的那個行程**（依記下的 PID）。不要停 Desktop 開的 ComfyUI，也不要用 `comfy stop`。
+   - **不要用 `& python.exe main.py …`**：那是前景執行，會一直佔住 agent 的指令直到逾時，也拿不到 PID。
+   - **含空白的路徑要用 `` `" `` 包起來**：模型路徑設定檔在 `Comfy Desktop` 資料夾裡，路徑有空白；
+     `-ArgumentList` 不會自動加引號，不包的話會在空白處被拆成兩個參數（實測包起來後完整傳入）。
+   - **只帶模型、輸入、輸出三組路徑**，模型與產出才會和 Desktop 共用。`installations.json` 裡 Desktop 自己的
+     `launchArgs`（例如 `--enable-manager`）**刻意不帶**：API 模式只給 agent 送工作，用不到擴充管理器。
+   - `--listen` 只綁 `127.0.0.1`，不要改成 `0.0.0.0`（會讓同網段的人都能送工作）。
+   - 載入需要一點時間，輪詢 `system_stats` 到有回應再繼續。
+5. **用完停掉自己啟動的那個行程**。不要停 Desktop 開的 ComfyUI，也不要用 `comfy stop`：
+
+   ```powershell
+   Stop-Process -Id <記下的 PID>
+   Get-NetTCPConnection -LocalPort 8188 -State Listen -ErrorAction SilentlyContinue   # 應該沒有結果
+   ```
+
+   `.venv\Scripts\python.exe` 其實是 uv 建立的**啟動器**（約 240 KB），它會帶起 `standalone-env\python.exe` 當子行程，
+   並帶入 `.venv` 的套件（所以有 torch；步驟 2 說的「沒有 torch」是指直接執行它）。**真正監聽 8188 的是子行程**，
+   實測停掉啟動器，子行程會跟著結束、埠隨即釋放。
+   萬一 8188 還在監聽，查它的 `OwningProcess`，用 `Get-CimInstance Win32_Process -Filter "ProcessId=<OwningProcess>"`
+   確認 `ParentProcessId` 是你記下的 PID 才停；不是的話那是別人（例如 Desktop）開的，不要動。
 
 ---
 
@@ -458,7 +474,7 @@ comfy --json download <prompt_id> -o generated
 |---|---|
 | `comfy` 指令找不到 | `uv tool update-shell` 後重開 agent；或改用 `uvx --from comfy-cli comfy` |
 | 連不上 ComfyUI（`server_not_running`） | 確認 Desktop 已開啟、埠號正確，必要時設 `COMFY_LOCAL_URL`；或改用步驟零方式二 |
-| 停掉 agent 背景啟動的 ComfyUI | 依啟動時記下的 PID 停掉；先確認停的不是 Desktop 開的 |
+| 停掉 agent 背景啟動的 ComfyUI | 停啟動時記下的 PID，再確認 8188 已無人監聽；仍在監聽時，先確認監聽者的父行程是自己記下的 PID 才停（見步驟零方式二第 5 點） |
 | 工作卡住 | `comfy --json jobs ls` 看佇列；確定要放棄才 `comfy --json jobs cancel <prompt_id>` |
 | 工作流程改壞了 | 重新 `templates fetch` 一份，或從使用者的原始檔重來 |
 | 模型下載一半中斷 | 刪掉 `.part` 檔重新下載（先確認刪的是 `.part`） |
@@ -486,6 +502,8 @@ comfy --json download <prompt_id> -o generated
 | 背景啟動時 `ModuleNotFoundError: No module named 'torch'` | 用到 `standalone-env\python.exe` 了，換成 `<installPath>\ComfyUI\.venv\Scripts\python.exe` |
 | 負面提示寫了沒效果 | Z-Image Turbo 範本是 cfg 1，負面提示不起作用；改寫成正面描述，見步驟六 |
 | 可以不裝 comfy-cli、直接打 ComfyUI 的 HTTP API 嗎？ | 可以：`POST /prompt` 送 API 格式工作流程、輪詢 `GET /history/<prompt_id>`、`GET /view` 取圖（實測可用）。但少了送出前預檢與付費節點攔截，本篇不採用 |
+| 背景啟動後 agent 的指令一直卡住到逾時 | 用了 `& python.exe main.py` 前景執行。改用 `Start-Process -PassThru`，見步驟零方式二 |
+| 行程清單裡跑的是 `standalone-env\python.exe`，不是 `.venv` 的 | 正常。`.venv` 的 python.exe 是啟動器，會帶起它並帶入 `.venv` 的套件，見步驟零方式二第 5 點 |
 
 ---
 
@@ -496,6 +514,7 @@ comfy --json download <prompt_id> -o generated
 | v0.1 | 2026-09-10 | 初版。於 Windows 11、Comfy Desktop 1.0.47（ComfyUI 0.35.0）、RTX 5060 Ti 16GB 實測：comfy-cli 1.20.0（以 `uvx` 執行）的送出、等待、取回、改參數、預檢，以及 Z-Image Turbo 補 VAE 後實際生圖全部通過。`uv tool install`、音樂、影片、macOS／Linux 尚未實測 |
 | v0.2 | 2026-09-11 | 環境檢查加入 VRAM，步驟四新增「依 VRAM 選版本」：未滿 16GB 改用 `image_z_image_turbo_int8`。於 RTX 5060 Laptop 8GB（ComfyUI 0.35.1）實測：`uv tool install comfy-cli` 可用、Int8 三個模型下載並通過 SHA256 驗證、中文提示詞生圖首張 34.5 秒、之後 11.1 秒。步驟五補上大檔放背景下載、`.part` 顯示 0 bytes 的說明。完整版與 Int8 畫質未並排對比；音樂、影片、macOS／Linux 仍未實測 |
 | v0.3 | 2026-09-11 | 移入另一個專案（國中數學教材站）用本機 ComfyUI 生教材圖的實戰經驗：步驟零新增「方式二：不開 Desktop 視窗、由 agent 以 API 模式背景啟動」（路徑從 Desktop 設定檔讀、Python 必須用 `ComfyUI\.venv`）；來源 B 新增從生過的 PNG 讀出 API 格式工作流程；步驟六新增 Z-Image Turbo 提示詞實測心得；常見問題補 4 條。於桌機核對 Desktop 設定檔欄位、`.venv` 有 torch 而 `standalone-env` 沒有、PNG 內嵌工作流程為 cfg 1.0＋`ConditioningZeroOut` |
+| v0.4 | 2026-09-11 | 修正步驟零方式二：啟動指令改用 `Start-Process -PassThru`（原本 `&` 前景執行會佔住 agent 的指令、拿不到 PID），含空白的路徑加 `` `" ``；明寫不帶 Desktop 的 `launchArgs`；`installations.json` 註明排除 `Comfy Cloud` 那筆；補停止與確認方式（`.venv` 的 python.exe 是 uv 啟動器，監聽埠的是 `standalone-env\python.exe` 子行程）。技能改為把啟動指令直接寫進 `SKILL.md`，因為安裝後的技能讀不到 `guides/`。於桌機用 `.venv` 的 python 跑測試腳本（綁 18188 埠）代替 ComfyUI 驗證：含空白路徑完整傳入、監聽者為子行程、停啟動器後子行程隨之結束；本版未實際以 API 模式重新啟動 ComfyUI |
 
 ---
 
