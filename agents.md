@@ -119,6 +119,8 @@ agents-lazy-guide/
   **前綴必須四家相同** —— 改成各自的 `claude-`／`codex-` 會讓 OpenCode 同時看到三份同主題技能。
 - **根目錄不可出現 `SKILL.md`** —— `npx skills` 會把整個 repo 當成單一 Skill，
   導致 `skills/` 底下的項目列不出來。入口固定用 `INSTALL.md`。
+- **執行必需的指令與參數一律寫在 `SKILL.md` 本文**，不可只寫「見 guide」。安裝只複製 `skills/<slug>/`，
+  技能在其他專案載入時讀不到 `guides/`；guide 只放背景、原因與常見問題。
 - **新增或修改主題後**，同步更新 `agents.json` 的 `topics`、`README.md`、`INSTALL.md` 三處清單。
 - 合併既有內容時**取聯集**，四份來源都要讀完再動筆，不要挑一份當基底。
 - 舊四個 repo 保留不刪（`claude-code-lazy-packs` 是公開 repo，刪除會斷他人連結）。

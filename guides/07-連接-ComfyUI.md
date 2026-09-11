@@ -2,7 +2,7 @@
 title: 'AI Agent 懶人包 #07：連接 ComfyUI'
 date: '2026-09-11'
 type: 懶人包
-version: v0.4
+version: v0.5
 status: 初版（生圖已實測，音樂與影片未實測）
 tags:
   - 懶人包
@@ -13,7 +13,7 @@ tags:
 
 # 懶人包 #07：連接 ComfyUI
 
-**版本** v0.4｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.5｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -53,7 +53,7 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
 
 ## 先備條件
 
-- [ ] 已安裝並開啟 **ComfyUI**（建議用 [ComfyUI Desktop](https://www.comfy.org/download)，一鍵安裝）
+- [ ] 已安裝 **ComfyUI**（建議用 [ComfyUI Desktop](https://www.comfy.org/download)，一鍵安裝；要不要開啟 Desktop 見步驟零）
 - [ ] 有 NVIDIA 顯卡，**VRAM 8GB 以上**（實測 RTX 5060 Laptop 8GB、RTX 5060 Ti 16GB；VRAM 越大能跑的模型越多）
 - [ ] 已安裝 **uv**（沒有的話先做懶人包 #00 環境建置）
 - [ ] 磁碟有足夠空間放模型（生圖模型一組約 11–20 GB，依顯卡選的版本而定，見步驟四；影片模型更大）
@@ -82,6 +82,8 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
 - **不安裝擴充節點**，除非使用者明確同意——`comfy node install` 會在本機執行第三方程式碼。
 - **不可盲目套用工具給的建議值**，尤其是 `workflow validate` 的 `suggestions`（見步驟七）。
 - 不把 `COMFY_API_KEY` 寫進檔案、指令列或對話。
+- **哪些要逐項確認**：安裝 comfy-cli、背景啟動 ComfyUI、下載模型、付費節點、安裝擴充節點、刪除任何東西。
+  改參數、送出前預檢、送出本機免費的工作**不必再問**——使用者說「用 ComfyUI 畫一張」就是要 agent 跑完。
 - 每個步驟失敗時給出具體排查方向，不要只說「請重試」。
 
 ---
@@ -337,9 +339,9 @@ comfy --json workflow set-slot comfyui/z-image.json "57.text=一隻戴墨鏡的�
 | 就算這樣寫，碼錶、尺、牆面刻痕這類小地方仍會長出亂碼數字 | **選定前放大檢查**；面積很小的話，可以用左右相鄰的顏色內插蓋掉 |
 | 「2 排、每排 4 塊」這種二維方陣、分節的軌道，數量幾乎都錯（實測 5 張全錯） | 要數的東西只排**單排**，或乾脆改構圖避開計數 |
 | 兩個角色時常把服裝互換，或多長出一隻動物 | 挑候選時**逐張對照角色設定** |
-| 本機生成免費，一張只要十幾秒 | **同一段提示一次跑 4 個 seed**，再從中挑一張 |
+| 本機生成免費，一張只要十幾秒 | 要挑圖時，**同一段提示一次跑 4 個 seed** 再從中挑一張；只要一張時照常跑一張 |
 
-跑 4 個 seed 的做法：`workflow set-slot` 改 seed → `run --no-watch` 拿到 prompt_id，重複 4 次
+需要挑圖時，跑 4 個 seed 的做法：`workflow set-slot` 改 seed → `run --no-watch` 拿到 prompt_id，重複 4 次
 （工作會在 ComfyUI 排隊），再逐一 `jobs watch`、`download`。
 
 ---
@@ -515,6 +517,7 @@ comfy --json download <prompt_id> -o generated
 | v0.2 | 2026-09-11 | 環境檢查加入 VRAM，步驟四新增「依 VRAM 選版本」：未滿 16GB 改用 `image_z_image_turbo_int8`。於 RTX 5060 Laptop 8GB（ComfyUI 0.35.1）實測：`uv tool install comfy-cli` 可用、Int8 三個模型下載並通過 SHA256 驗證、中文提示詞生圖首張 34.5 秒、之後 11.1 秒。步驟五補上大檔放背景下載、`.part` 顯示 0 bytes 的說明。完整版與 Int8 畫質未並排對比；音樂、影片、macOS／Linux 仍未實測 |
 | v0.3 | 2026-09-11 | 移入另一個專案（國中數學教材站）用本機 ComfyUI 生教材圖的實戰經驗：步驟零新增「方式二：不開 Desktop 視窗、由 agent 以 API 模式背景啟動」（路徑從 Desktop 設定檔讀、Python 必須用 `ComfyUI\.venv`）；來源 B 新增從生過的 PNG 讀出 API 格式工作流程；步驟六新增 Z-Image Turbo 提示詞實測心得；常見問題補 4 條。於桌機核對 Desktop 設定檔欄位、`.venv` 有 torch 而 `standalone-env` 沒有、PNG 內嵌工作流程為 cfg 1.0＋`ConditioningZeroOut` |
 | v0.4 | 2026-09-11 | 修正步驟零方式二：啟動指令改用 `Start-Process -PassThru`（原本 `&` 前景執行會佔住 agent 的指令、拿不到 PID），含空白的路徑加 `` `" ``；明寫不帶 Desktop 的 `launchArgs`；`installations.json` 註明排除 `Comfy Cloud` 那筆；補停止與確認方式（`.venv` 的 python.exe 是 uv 啟動器，監聽埠的是 `standalone-env\python.exe` 子行程）。技能改為把啟動指令直接寫進 `SKILL.md`，因為安裝後的技能讀不到 `guides/`。於桌機用 `.venv` 的 python 跑測試腳本（綁 18188 埠）代替 ComfyUI 驗證：含空白路徑完整傳入、監聽者為子行程、停啟動器後子行程隨之結束；本版未實際以 API 模式重新啟動 ComfyUI |
+| v0.5 | 2026-09-11 | 生圖預設只跑一張，使用者要挑圖時才一次跑 4 個 seed；執行原則明列哪些要逐項確認（改參數、預檢、送出本機免費工作不必再問）；先備條件改為「已安裝 ComfyUI」，不必事先開啟（`INSTALL.md` 與 `install-all` 同步）。技能的提示詞要點精簡為做法，原因與實例留在步驟六 |
 
 ---
 
