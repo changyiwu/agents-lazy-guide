@@ -2,7 +2,7 @@
 title: 'AI Agent 懶人包 #07：連接 ComfyUI'
 date: '2026-09-11'
 type: 懶人包
-version: v0.5
+version: v0.6
 status: 初版（生圖已實測，音樂與影片未實測）
 tags:
   - 懶人包
@@ -13,7 +13,7 @@ tags:
 
 # 懶人包 #07：連接 ComfyUI
 
-**版本** v0.5｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.6｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -139,7 +139,7 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
    - **只帶模型、輸入、輸出三組路徑**，模型與產出才會和 Desktop 共用。`installations.json` 裡 Desktop 自己的
      `launchArgs`（例如 `--enable-manager`）**刻意不帶**：API 模式只給 agent 送工作，用不到擴充管理器。
    - `--listen` 只綁 `127.0.0.1`，不要改成 `0.0.0.0`（會讓同網段的人都能送工作）。
-   - 載入需要一點時間，輪詢 `system_stats` 到有回應再繼續。
+   - 載入需要一點時間，輪詢 `system_stats` 到有回應再繼續（16GB 桌機實測 5.6–8.1 秒）。
 5. **用完停掉自己啟動的那個行程**。不要停 Desktop 開的 ComfyUI，也不要用 `comfy stop`：
 
    ```powershell
@@ -149,7 +149,7 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
 
    `.venv\Scripts\python.exe` 其實是 uv 建立的**啟動器**（約 240 KB），它會帶起 `standalone-env\python.exe` 當子行程，
    並帶入 `.venv` 的套件（所以有 torch；步驟 2 說的「沒有 torch」是指直接執行它）。**真正監聽 8188 的是子行程**，
-   實測停掉啟動器，子行程會跟著結束、埠隨即釋放。
+   實測停掉啟動器，子行程會跟著結束、埠隨即釋放（先以測試腳本驗證，之後實際啟動 ComfyUI 再測兩次，約 1 秒釋放 8188）。
    萬一 8188 還在監聽，查它的 `OwningProcess`，用 `Get-CimInstance Win32_Process -Filter "ProcessId=<OwningProcess>"`
    確認 `ParentProcessId` 是你記下的 PID 才停；不是的話那是別人（例如 Desktop）開的，不要動。
 
@@ -287,13 +287,15 @@ comfy --json model list-folder vae
 > 看下載腳本的輸出或 curl 行程是否還在來判斷，不要因此重下。
 >
 > PowerShell 7 用 `Invoke-WebRequest -Method Head -MaximumRedirection 0` 查大小時，會印出「已超過重新導向次數上限」，
-> 但標頭照樣讀得到、數值正確，可以忽略。
+> 但標頭照樣讀得到、數值正確，可以忽略。一次查好幾個檔時紅字會蓋過結果，可以改用
+> `curl.exe -sI <url>`，從輸出取 `x-linked-size`、`x-linked-etag` 兩行，就不會出現這個訊息。
 
 **實測紀錄**：
 
 | 電腦 | 補下載的檔 | 耗時 | 驗證 |
 |---|---|---|---|
 | 桌機 16GB（完整版） | `vae/ae.safetensors`（335,304,388 bytes） | 8 秒 | SHA256 相符 |
+| 另一台桌機 16GB（完整版，全新安裝） | `vae/ae.safetensors` 0.31 GB＋`text_encoders/qwen_3_4b.safetensors` 7.49 GB＋`diffusion_models/z_image_turbo_bf16.safetensors` 11.46 GB | 共約 7 分鐘（約 45 MB/s） | 三個都 SHA256 相符 |
 | 筆電 8GB（Int8 版） | `vae/ae.safetensors` 320 MB＋`text_encoders/qwen_3_4b_fp8_mixed.safetensors` 5.25 GB＋`diffusion_models/z_image_turbo_int8_convrot.safetensors` 5.78 GB | 共約 27 分鐘（約 6–8 MB/s） | 三個都 SHA256 相符 |
 
 三個檔都來自 Hugging Face `Comfy-Org/z_image_turbo`。下載速度依網路而定，差很多是正常的。
@@ -400,7 +402,7 @@ comfy --json download <prompt_id> -o generated
 
 | 情況 | 桌機 RTX 5060 Ti 16GB（完整版） | 筆電 RTX 5060 Laptop 8GB（Int8 版） |
 |---|---|---|
-| 第一張（含載入模型） | 32 秒 | 34.5 秒 |
+| 第一張（含載入模型） | 32 秒（另一台同規格 31.5 秒，1024×1024） | 34.5 秒 |
 | 第二張（模型已在記憶體） | 11 秒（1280×720） | 11.1 秒（1024×1024） |
 
 8GB 筆電換成 Int8 版後，速度和 16GB 桌機跑完整版差不多。
@@ -518,6 +520,7 @@ comfy --json download <prompt_id> -o generated
 | v0.3 | 2026-09-11 | 移入另一個專案（國中數學教材站）用本機 ComfyUI 生教材圖的實戰經驗：步驟零新增「方式二：不開 Desktop 視窗、由 agent 以 API 模式背景啟動」（路徑從 Desktop 設定檔讀、Python 必須用 `ComfyUI\.venv`）；來源 B 新增從生過的 PNG 讀出 API 格式工作流程；步驟六新增 Z-Image Turbo 提示詞實測心得；常見問題補 4 條。於桌機核對 Desktop 設定檔欄位、`.venv` 有 torch 而 `standalone-env` 沒有、PNG 內嵌工作流程為 cfg 1.0＋`ConditioningZeroOut` |
 | v0.4 | 2026-09-11 | 修正步驟零方式二：啟動指令改用 `Start-Process -PassThru`（原本 `&` 前景執行會佔住 agent 的指令、拿不到 PID），含空白的路徑加 `` `" ``；明寫不帶 Desktop 的 `launchArgs`；`installations.json` 註明排除 `Comfy Cloud` 那筆；補停止與確認方式（`.venv` 的 python.exe 是 uv 啟動器，監聽埠的是 `standalone-env\python.exe` 子行程）。技能改為把啟動指令直接寫進 `SKILL.md`，因為安裝後的技能讀不到 `guides/`。於桌機用 `.venv` 的 python 跑測試腳本（綁 18188 埠）代替 ComfyUI 驗證：含空白路徑完整傳入、監聽者為子行程、停啟動器後子行程隨之結束；本版未實際以 API 模式重新啟動 ComfyUI |
 | v0.5 | 2026-09-11 | 生圖預設只跑一張，使用者要挑圖時才一次跑 4 個 seed；執行原則明列哪些要逐項確認（改參數、預檢、送出本機免費工作不必再問）；先備條件改為「已安裝 ComfyUI」，不必事先開啟（`INSTALL.md` 與 `install-all` 同步）。技能的提示詞要點精簡為做法，原因與實例留在步驟六 |
+| v0.6 | 2026-09-11 | 在另一台 RTX 5060 Ti 16GB 桌機（Comfy Desktop 全新安裝、ComfyUI 0.35.1）從零實測完整版：`uv tool install comfy-cli`、下載 bf16 三個檔共 19.26 GB（約 7 分鐘，大小與 SHA256 全數相符）。**步驟零方式二第一次實際啟動 ComfyUI 驗證**：`Start-Process` 啟動後 5.6／8.1 秒可連線，監聽者是 `standalone-env\python.exe` 子行程，停掉啟動器約 1 秒後釋放 8188。範本預設提示詞生圖，首張 31.5 秒。步驟五補上 `curl.exe -sI` 查大小的替代寫法。`SKILL.md` 未修改 |
 
 ---
 
