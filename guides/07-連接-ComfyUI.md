@@ -1,8 +1,8 @@
 ---
 title: 'AI Agent 懶人包 #07：連接 ComfyUI'
-date: '2026-09-10'
+date: '2026-09-11'
 type: 懶人包
-version: v0.1
+version: v0.2
 status: 初版（生圖已實測，音樂與影片未實測）
 tags:
   - 懶人包
@@ -13,7 +13,7 @@ tags:
 
 # 懶人包 #07：連接 ComfyUI
 
-**版本** v0.1｜**更新日期** 2026-09-10｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.2｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -54,9 +54,9 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
 ## 先備條件
 
 - [ ] 已安裝並開啟 **ComfyUI**（建議用 [ComfyUI Desktop](https://www.comfy.org/download)，一鍵安裝）
-- [ ] 有 NVIDIA 顯卡（實測 RTX 5060 Ti 16GB；VRAM 越大能跑的模型越多）
+- [ ] 有 NVIDIA 顯卡，**VRAM 8GB 以上**（實測 RTX 5060 Laptop 8GB、RTX 5060 Ti 16GB；VRAM 越大能跑的模型越多）
 - [ ] 已安裝 **uv**（沒有的話先做懶人包 #00 環境建置）
-- [ ] 磁碟有足夠空間放模型（生圖模型一組約 20 GB，影片模型更大）
+- [ ] 磁碟有足夠空間放模型（生圖模型一組約 11–20 GB，依顯卡選的版本而定，見步驟四；影片模型更大）
 
 ---
 
@@ -96,6 +96,7 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
 4. **確認 ComfyUI 在線**：打開 `http://127.0.0.1:8188/system_stats` 應回傳 JSON
    - Windows：`Invoke-RestMethod http://127.0.0.1:8188/system_stats`
    - macOS / Linux：`curl -s http://127.0.0.1:8188/system_stats`
+5. **記下 VRAM**：同一份回傳的 `devices[0].vram_total`（位元組），步驟四要依它選模型版本
 
 > 全部通過後告知：「環境檢查完成，開始執行。」
 > 安裝完工具後若指令仍找不到，提醒使用者完全關閉並重開 agent。
@@ -114,7 +115,7 @@ comfy --version
 ```
 
 > **不想安裝也可以。** 把本篇所有 `comfy` 換成 `uvx --from comfy-cli comfy`，
-> uv 會暫時下載來執行，不會加進 PATH。本篇的實測就是用這個方式（comfy-cli 1.20.0）。
+> uv 會暫時下載來執行，不會加進 PATH。兩種方式都實測過（comfy-cli 1.20.0）。
 
 `comfy` 找不到時，執行 `uv tool update-shell` 後重開 agent。
 
@@ -161,6 +162,20 @@ comfy --json templates check image_z_image_turbo
 comfy --json templates fetch image_z_image_turbo -o comfyui/z-image.json
 ```
 
+**先依 VRAM 選版本**。同一個模型，官方範本庫常有完整版與量化版兩種範本，
+缺的模型檔完全不同。以 Z-Image Turbo 為例：
+
+| 你的 VRAM | 範本 | 要下載的模型 | 合計 |
+|---|---|---|---|
+| 16GB 以上 | `image_z_image_turbo` | `z_image_turbo_bf16` 11.46 GB＋`qwen_3_4b` 7.49 GB＋`ae` 0.31 GB | 約 19.3 GB |
+| 8GB–未滿 16GB | `image_z_image_turbo_int8` | `z_image_turbo_int8_convrot` 5.78 GB＋`qwen_3_4b_fp8_mixed` 5.25 GB＋`ae` 0.31 GB | 約 11.3 GB |
+
+- 完整版在 16GB 桌機生圖時佔用約 12.6 GB VRAM，**8GB 放不下**。ComfyUI 會自動把放不下的部分搬到系統記憶體，
+  所以仍跑得動，但會慢很多，而且需要 32GB 以上記憶體——**不要讓它硬跑，直接換 Int8 範本**
+- Int8 範本實測（RTX 5060 Laptop 8GB）生圖時 VRAM 約 4.5 GB，不需要擴充節點；兩個範本改參數的地址相同（步驟六）
+- 量化版用同一個 seed **不會**得到和完整版一樣的圖；兩者畫質尚未並排對比
+- VRAM 未滿 8GB 尚未實測
+
 `templates check` 會告訴你三件事：
 
 | 欄位 | 意思 |
@@ -204,8 +219,21 @@ comfy --json model list-folder vae
 > **不要用 `comfy model download`**：它依賴 comfy-cli 自己的工作區（就是那個不存在的路徑），
 > 在 Desktop 下未驗證會寫到哪裡。
 
-**實測紀錄**：Z-Image Turbo 缺 `vae/ae.safetensors`（335,304,388 bytes，約 320 MB），
-從 Hugging Face `Comfy-Org/z_image_turbo` 下載 8 秒，SHA256 與 `X-Linked-ETag` 相符。
+> **大檔一律放背景跑。** 模型動輒 5 GB 以上，會超過 agent 單一指令的時限。
+> 下載途中 Windows 可能一直顯示 `.part` 是 0 bytes——那是檔案還沒關閉、大小沒更新，**不是卡住**；
+> 看下載腳本的輸出或 curl 行程是否還在來判斷，不要因此重下。
+>
+> PowerShell 7 用 `Invoke-WebRequest -Method Head -MaximumRedirection 0` 查大小時，會印出「已超過重新導向次數上限」，
+> 但標頭照樣讀得到、數值正確，可以忽略。
+
+**實測紀錄**：
+
+| 電腦 | 補下載的檔 | 耗時 | 驗證 |
+|---|---|---|---|
+| 桌機 16GB（完整版） | `vae/ae.safetensors`（335,304,388 bytes） | 8 秒 | SHA256 相符 |
+| 筆電 8GB（Int8 版） | `vae/ae.safetensors` 320 MB＋`text_encoders/qwen_3_4b_fp8_mixed.safetensors` 5.25 GB＋`diffusion_models/z_image_turbo_int8_convrot.safetensors` 5.78 GB | 共約 27 分鐘（約 6–8 MB/s） | 三個都 SHA256 相符 |
+
+三個檔都來自 Hugging Face `Comfy-Org/z_image_turbo`。下載速度依網路而定，差很多是正常的。
 
 ---
 
@@ -215,7 +243,7 @@ comfy --json model list-folder vae
 comfy --json workflow slots comfyui/z-image.json
 ```
 
-會列出每個可調欄位與目前的值，例如 Z-Image Turbo 範本：
+會列出每個可調欄位與目前的值，例如 Z-Image Turbo 範本（完整版與 Int8 版地址相同）：
 
 | 地址 | 欄位 | 預設值 |
 |---|---|---|
@@ -289,12 +317,14 @@ comfy --json download <prompt_id> -o generated
 分段送出後，就算 `jobs watch` 被時限切斷，**工作仍然在 ComfyUI 上繼續跑**，
 重新執行 `jobs watch <prompt_id>` 就能接回，**不要重新送出**（會多跑一次）。
 
-**實測速度**（RTX 5060 Ti 16GB、Z-Image Turbo、8 步）：
+**實測速度**（Z-Image Turbo、8 步）：
 
-| 情況 | 耗時 |
-|---|---|
-| 第一張（含載入約 19 GB 模型） | 32 秒 |
-| 第二張（模型已在記憶體，1280×720） | 11 秒 |
+| 情況 | 桌機 RTX 5060 Ti 16GB（完整版） | 筆電 RTX 5060 Laptop 8GB（Int8 版） |
+|---|---|---|
+| 第一張（含載入模型） | 32 秒 | 34.5 秒 |
+| 第二張（模型已在記憶體） | 11 秒（1280×720） | 11.1 秒（1024×1024） |
+
+8GB 筆電換成 Int8 版後，速度和 16GB 桌機跑完整版差不多。
 
 ---
 
@@ -387,7 +417,9 @@ comfy --json download <prompt_id> -o generated
 | validate 報用法錯誤 | 參數要寫 `--workflow <檔>`，而且要先轉成 API 格式 |
 | 出現 `spend_consent_required` | 工作流程含付費節點。先問使用者要不要花點數，不要自己加 `--allow-spend` |
 | 下載的檔名是一串亂碼 | 那是 prompt_id 前 8 碼，屬正常，需要時自行改名 |
-| 中文提示詞能用嗎？ | Z-Image Turbo 實測可以；其他模型依模型而定 |
+| 中文提示詞能用嗎？ | Z-Image Turbo 完整版與 Int8 版都實測可以；其他模型依模型而定 |
+| 8GB 顯卡生圖很慢或爆顯存 | 用到完整版範本了。改用量化版範本（例如 `image_z_image_turbo_int8`），見步驟四 |
+| 下載中 `.part` 一直是 0 bytes | Windows 在檔案關閉前不一定更新大小，看下載輸出判斷，不要重下 |
 
 ---
 
@@ -396,6 +428,7 @@ comfy --json download <prompt_id> -o generated
 | 版本 | 日期 | 變更 |
 |------|------|------|
 | v0.1 | 2026-09-10 | 初版。於 Windows 11、Comfy Desktop 1.0.47（ComfyUI 0.35.0）、RTX 5060 Ti 16GB 實測：comfy-cli 1.20.0（以 `uvx` 執行）的送出、等待、取回、改參數、預檢，以及 Z-Image Turbo 補 VAE 後實際生圖全部通過。`uv tool install`、音樂、影片、macOS／Linux 尚未實測 |
+| v0.2 | 2026-09-11 | 環境檢查加入 VRAM，步驟四新增「依 VRAM 選版本」：未滿 16GB 改用 `image_z_image_turbo_int8`。於 RTX 5060 Laptop 8GB（ComfyUI 0.35.1）實測：`uv tool install comfy-cli` 可用、Int8 三個模型下載並通過 SHA256 驗證、中文提示詞生圖首張 34.5 秒、之後 11.1 秒。步驟五補上大檔放背景下載、`.part` 顯示 0 bytes 的說明。完整版與 Int8 畫質未並排對比；音樂、影片、macOS／Linux 仍未實測 |
 
 ---
 

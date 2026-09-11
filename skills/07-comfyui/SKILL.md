@@ -21,16 +21,18 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
    連不上 → 🖐️ 請使用者開啟 ComfyUI Desktop。新版 Desktop 實測用 8188 埠；
    用其他埠時設 `COMFY_LOCAL_URL=http://127.0.0.1:<埠>`。
 2. **安裝 comfy-cli**（先詢問）：`uv tool install comfy-cli`，再 `comfy --version`。
-   不想安裝時，把後面的 `comfy` 一律換成 `uvx --from comfy-cli comfy`（本流程以此實測，1.20.0）。
+   不想安裝時，把後面的 `comfy` 一律換成 `uvx --from comfy-cli comfy`（兩種方式都實測過，1.20.0）。
    **不要**執行 `comfy install`／`launch`／`update`／`stop`——Desktop 自己管理安裝與更新。
 3. **關閉使用統計**：`comfy tracking disable`（隱私優先，使用者想開再開）。
-4. **連線驗收**：`comfy --json system-stats`，回報 ComfyUI 版本、GPU 與 VRAM。
+4. **連線驗收**：`comfy --json system-stats`，回報 ComfyUI 版本、GPU 與 VRAM（`devices[0].vram_total`，步驟 5 選版本用）。
    `comfy which` 對 Desktop 會指到不存在的 `Documents\comfy\ComfyUI`，**這是正常的，忽略它**。
    **只要求「連接 ComfyUI」時，做到這裡就結束。**
 5. **選工作流程**（先問使用者要做什麼）：
    - 官方範本：`comfy --json templates ls --type image`（或 `audio`／`video`）→
      `comfy --json templates check <名稱>` 看 `verdict`、缺哪些模型、`api.dependent` 是否為 true（付費節點）→
      `comfy --json templates fetch <名稱> -o <檔>`。
+   - **依步驟 4 的 VRAM 選版本**：未滿 16GB 優先找量化版範本，例如 `image_z_image_turbo_int8`（下載約 11.3 GB，
+     8GB 實測可跑）；完整版 `image_z_image_turbo`（約 19.3 GB）放不進 8GB，不要讓它靠系統記憶體硬跑。
    - 使用者自己的：🖐️ 請使用者在 ComfyUI 把工作流程存成 JSON（UI 或 API 格式都可以）。
 
    工作流程檔放在專案的 `comfyui/` 資料夾。
@@ -40,6 +42,7 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
    - 位置：`system-stats` 的 `argv` 裡 `--extra-model-paths-config` 指向一個 yaml，取其中
      `base_path` 加上資料夾名（Desktop 通常是 `%LOCALAPPDATA%\Comfy-Desktop\ComfyUI-Shared\models`）。
    - 先存成 `<檔名>.part`，大小與 SHA256 都相符才改名，避免 ComfyUI 讀到下載一半的檔。
+     大檔放背景下載；Windows 上 `.part` 途中顯示 0 bytes 不代表卡住，看下載輸出判斷。
    - 不要用 `comfy model download`：它依賴 comfy-cli 自己的工作區，未驗證在 Desktop 下會寫到哪裡。
    - 完成後 `comfy --json model list-folder <資料夾>` 確認 ComfyUI 看得到。
 7. **改參數**：`comfy --json workflow slots <檔>` 列出可調欄位，**地址照抄**（例如 `57.text`、
@@ -58,7 +61,8 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
    ```
 
    `jobs watch` 逾時或 agent 的指令時限到了，**工作仍在 ComfyUI 上跑**：重跑 `jobs watch` 接回，
-   **不要重新送出**。參考速度：RTX 5060 Ti 16GB 跑 Z-Image Turbo，首張（含載入模型）32 秒、之後約 11 秒。
+   **不要重新送出**。參考速度（Z-Image Turbo，首張含載入模型／之後）：RTX 5060 Ti 16GB 完整版 32／11 秒；
+   RTX 5060 Laptop 8GB Int8 版 34.5／11.1 秒。
 10. **呈現結果**：圖片直接開給使用者看，並回報完整路徑。影片用 `comfy preview <檔>` 產縮圖；
     **agent 聽不到音樂**，請使用者自己聽。音樂與影片的注意事項見 guide（尚未實測）。
 
