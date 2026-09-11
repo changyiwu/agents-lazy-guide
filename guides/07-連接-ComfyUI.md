@@ -2,7 +2,7 @@
 title: 'AI Agent 懶人包 #07：連接 ComfyUI'
 date: '2026-09-11'
 type: 懶人包
-version: v0.2
+version: v0.3
 status: 初版（生圖已實測，音樂與影片未實測）
 tags:
   - 懶人包
@@ -13,7 +13,7 @@ tags:
 
 # 懶人包 #07：連接 ComfyUI
 
-**版本** v0.2｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.3｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -77,6 +77,7 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
   **不可**為了讓錯誤消失而自行加上 `--allow-spend`。
 - **下載模型前先問。** 列出檔名、放哪個資料夾、大小、來源；模型動輒數 GB。
 - **不要動 Desktop 的安裝。** 不執行 `comfy install`／`launch`／`update`／`stop`，Desktop 自己管理。
+  步驟零「方式二」只是用 Desktop 裝好的環境跑一個 ComfyUI 行程，不改安裝；用完只停自己啟動的那個行程。
 - **不安裝官方技能**（`comfy skills install`），也不主動送出 `comfy feedback`／`comfy agent-review`。
 - **不安裝擴充節點**，除非使用者明確同意——`comfy node install` 會在本機執行第三方程式碼。
 - **不可盲目套用工具給的建議值**，尤其是 `workflow validate` 的 `suggestions`（見步驟七）。
@@ -101,9 +102,38 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
 > 全部通過後告知：「環境檢查完成，開始執行。」
 > 安裝完工具後若指令仍找不到，提醒使用者完全關閉並重開 agent。
 
-**連不上 ComfyUI 時**：🖐️ 請使用者開啟 ComfyUI Desktop，等它載入完成再試。
+**連不上 ComfyUI 時**，先問使用者要用哪一種方式。
+
+**方式一：開啟 Desktop（預設）**——🖐️ 請使用者開啟 ComfyUI Desktop，等它載入完成再試。
 新版 Desktop 實測使用 **8188** 埠；如果你的 ComfyUI 用別的埠，設定環境變數
 `COMFY_LOCAL_URL=http://127.0.0.1:<埠>`，之後所有 `comfy` 指令都會連到那裡。
+
+**方式二：不開 Desktop 視窗，由 agent 在背景以 API 模式啟動**（Windows 的 Desktop 安裝實測可用）。
+適合只要 agent 生圖、不需要看 ComfyUI 畫面的時候。後面的步驟完全相同，因為 comfy-cli 都走 HTTP 連線。
+
+1. **讀路徑，不要照抄**——每台電腦的實例 id 都不同：
+
+   | 要什麼 | 從哪裡讀 |
+   |---|---|
+   | 安裝位置、實例 id | `%APPDATA%\Comfy Desktop\installations.json` 的 `installPath`、`id`（`sourceId` 不是 `cloud` 的那一筆） |
+   | 模型路徑設定檔 | `%APPDATA%\Comfy Desktop\instance-model-paths\<實例 id>.yaml` |
+   | 輸入、輸出資料夾 | `%APPDATA%\Comfy Desktop\settings.json` 的 `inputDir`、`outputDir` |
+
+2. **Python 一定要用 `<installPath>\ComfyUI\.venv\Scripts\python.exe`**。
+   同層的 `<installPath>\standalone-env\python.exe` 看起來也像，但**沒有 torch**，一跑就 `ModuleNotFoundError`。
+3. **確認 Desktop 沒有開著**，否則兩個行程會搶同一個埠。
+4. **放背景啟動**（工作目錄設在 `<installPath>\ComfyUI`，記下 PID）：
+
+   ```powershell
+   & "<installPath>\ComfyUI\.venv\Scripts\python.exe" main.py `
+     --listen 127.0.0.1 --port 8188 --disable-auto-launch `
+     --extra-model-paths-config "<模型路徑設定檔>" `
+     --output-directory "<outputDir>" --input-directory "<inputDir>"
+   ```
+
+   參數照 Desktop 的設定帶齊，模型與輸入、輸出資料夾才會和 Desktop 共用。`--listen` 只綁 `127.0.0.1`，
+   不要改成 `0.0.0.0`（會讓同網段的人都能送工作）。載入需要一點時間，輪詢 `system_stats` 到有回應再繼續。
+5. **用完停掉自己啟動的那個行程**（依記下的 PID）。不要停 Desktop 開的 ComfyUI，也不要用 `comfy stop`。
 
 ---
 
@@ -191,6 +221,21 @@ comfy --json templates fetch image_z_image_turbo -o comfyui/z-image.json
 🖐️ 在 ComfyUI 裡把做好的工作流程存成 JSON，放進專案的 `comfyui/` 資料夾。
 UI 格式或 API 格式都可以，comfy-cli 會自動轉換。
 
+> **不想另存也可以：直接用生過的圖。** ComfyUI 存的 PNG 內嵌一個 `prompt` 文字區塊，
+> 內容就是那張圖的**完整 API 格式工作流程**。用 Pillow 讀出來存成 JSON 即可
+> （ComfyUI 的 `.venv` 裡就有 Pillow，不必另外裝）：
+>
+> ```python
+> import json
+> from PIL import Image
+> wf = json.loads(Image.open("那張圖.png").info["prompt"])
+> with open("comfyui/my-workflow.json", "w", encoding="utf-8") as f:
+>     json.dump(wf, f, ensure_ascii=False, indent=2)
+> ```
+>
+> 實測 Desktop 用 Z-Image Turbo 範本生的圖讀得出完整工作流程（10 個節點，含提示詞、seed、尺寸）。
+> 取出後一樣先跑步驟六的 `slots` 看地址，不要自己猜節點 id。
+
 ---
 
 ## 步驟五：補模型
@@ -264,6 +309,22 @@ comfy --json workflow set-slot comfyui/z-image.json "57.text=一隻戴墨鏡的�
 > 你自己的工作流程或範本都要用 `workflow set-slot`。
 
 中文提示詞實測可用（Z-Image Turbo 官方標明支援中英文）。
+
+### Z-Image Turbo 提示詞實測心得
+
+以下來自實際生成教材插圖與四格漫畫的經驗（Int8 版，筆電 8GB）：
+
+| 現象 | 做法 |
+|---|---|
+| 英文提示常把服裝、配件畫錯（「連身工作服」變吊帶褲、推在額頭上的護目鏡戴到眼睛上） | **提示詞寫中文**，服裝與配件逐項描述 |
+| 寫「不要文字」「no text」沒有用 | 範本是 cfg 1＋`ConditioningZeroOut`（從生出的圖讀回 KSampler 確認 `cfg: 1.0`），**負面提示根本不起作用**。改寫成正面描述：「畫面中沒有任何文字」 |
+| 就算這樣寫，碼錶、尺、牆面刻痕這類小地方仍會長出亂碼數字 | **選定前放大檢查**；面積很小的話，可以用左右相鄰的顏色內插蓋掉 |
+| 「2 排、每排 4 塊」這種二維方陣、分節的軌道，數量幾乎都錯（實測 5 張全錯） | 要數的東西只排**單排**，或乾脆改構圖避開計數 |
+| 兩個角色時常把服裝互換，或多長出一隻動物 | 挑候選時**逐張對照角色設定** |
+| 本機生成免費，一張只要十幾秒 | **同一段提示一次跑 4 個 seed**，再從中挑一張 |
+
+跑 4 個 seed 的做法：`workflow set-slot` 改 seed → `run --no-watch` 拿到 prompt_id，重複 4 次
+（工作會在 ComfyUI 排隊），再逐一 `jobs watch`、`download`。
 
 ---
 
@@ -396,7 +457,8 @@ comfy --json download <prompt_id> -o generated
 | 想回到哪裡 | 怎麼做 |
 |---|---|
 | `comfy` 指令找不到 | `uv tool update-shell` 後重開 agent；或改用 `uvx --from comfy-cli comfy` |
-| 連不上 ComfyUI（`server_not_running`） | 確認 Desktop 已開啟、埠號正確，必要時設 `COMFY_LOCAL_URL` |
+| 連不上 ComfyUI（`server_not_running`） | 確認 Desktop 已開啟、埠號正確，必要時設 `COMFY_LOCAL_URL`；或改用步驟零方式二 |
+| 停掉 agent 背景啟動的 ComfyUI | 依啟動時記下的 PID 停掉；先確認停的不是 Desktop 開的 |
 | 工作卡住 | `comfy --json jobs ls` 看佇列；確定要放棄才 `comfy --json jobs cancel <prompt_id>` |
 | 工作流程改壞了 | 重新 `templates fetch` 一份，或從使用者的原始檔重來 |
 | 模型下載一半中斷 | 刪掉 `.part` 檔重新下載（先確認刪的是 `.part`） |
@@ -420,6 +482,10 @@ comfy --json download <prompt_id> -o generated
 | 中文提示詞能用嗎？ | Z-Image Turbo 完整版與 Int8 版都實測可以；其他模型依模型而定 |
 | 8GB 顯卡生圖很慢或爆顯存 | 用到完整版範本了。改用量化版範本（例如 `image_z_image_turbo_int8`），見步驟四 |
 | 下載中 `.part` 一直是 0 bytes | Windows 在檔案關閉前不一定更新大小，看下載輸出判斷，不要重下 |
+| 不開 Desktop 視窗能用嗎？ | 可以，由 agent 背景啟動，見步驟零方式二（Windows 實測） |
+| 背景啟動時 `ModuleNotFoundError: No module named 'torch'` | 用到 `standalone-env\python.exe` 了，換成 `<installPath>\ComfyUI\.venv\Scripts\python.exe` |
+| 負面提示寫了沒效果 | Z-Image Turbo 範本是 cfg 1，負面提示不起作用；改寫成正面描述，見步驟六 |
+| 可以不裝 comfy-cli、直接打 ComfyUI 的 HTTP API 嗎？ | 可以：`POST /prompt` 送 API 格式工作流程、輪詢 `GET /history/<prompt_id>`、`GET /view` 取圖（實測可用）。但少了送出前預檢與付費節點攔截，本篇不採用 |
 
 ---
 
@@ -429,6 +495,7 @@ comfy --json download <prompt_id> -o generated
 |------|------|------|
 | v0.1 | 2026-09-10 | 初版。於 Windows 11、Comfy Desktop 1.0.47（ComfyUI 0.35.0）、RTX 5060 Ti 16GB 實測：comfy-cli 1.20.0（以 `uvx` 執行）的送出、等待、取回、改參數、預檢，以及 Z-Image Turbo 補 VAE 後實際生圖全部通過。`uv tool install`、音樂、影片、macOS／Linux 尚未實測 |
 | v0.2 | 2026-09-11 | 環境檢查加入 VRAM，步驟四新增「依 VRAM 選版本」：未滿 16GB 改用 `image_z_image_turbo_int8`。於 RTX 5060 Laptop 8GB（ComfyUI 0.35.1）實測：`uv tool install comfy-cli` 可用、Int8 三個模型下載並通過 SHA256 驗證、中文提示詞生圖首張 34.5 秒、之後 11.1 秒。步驟五補上大檔放背景下載、`.part` 顯示 0 bytes 的說明。完整版與 Int8 畫質未並排對比；音樂、影片、macOS／Linux 仍未實測 |
+| v0.3 | 2026-09-11 | 移入另一個專案（國中數學教材站）用本機 ComfyUI 生教材圖的實戰經驗：步驟零新增「方式二：不開 Desktop 視窗、由 agent 以 API 模式背景啟動」（路徑從 Desktop 設定檔讀、Python 必須用 `ComfyUI\.venv`）；來源 B 新增從生過的 PNG 讀出 API 格式工作流程；步驟六新增 Z-Image Turbo 提示詞實測心得；常見問題補 4 條。於桌機核對 Desktop 設定檔欄位、`.venv` 有 torch 而 `standalone-env` 沒有、PNG 內嵌工作流程為 cfg 1.0＋`ConditioningZeroOut` |
 
 ---
 

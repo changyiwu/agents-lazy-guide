@@ -17,9 +17,14 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 
 ## 步驟
 
-1. **檢查環境**：`uv --version`；確認 `http://127.0.0.1:8188/system_stats` 有回應。
-   連不上 → 🖐️ 請使用者開啟 ComfyUI Desktop。新版 Desktop 實測用 8188 埠；
-   用其他埠時設 `COMFY_LOCAL_URL=http://127.0.0.1:<埠>`。
+1. **檢查環境**：`uv --version`；確認 `http://127.0.0.1:8188/system_stats` 有回應。連不上 → 問使用者選哪一種：
+   - 🖐️ 使用者自己開啟 ComfyUI Desktop。新版 Desktop 實測用 8188 埠；
+     用其他埠時設 `COMFY_LOCAL_URL=http://127.0.0.1:<埠>`。
+   - **不開 Desktop 視窗，由 agent 在背景以 API 模式啟動**（Windows 的 Desktop 安裝，指令見 guide 步驟零）。
+     路徑一律從 `%APPDATA%\Comfy Desktop\installations.json`（`installPath`、實例 `id`）與 `settings.json`
+     （`inputDir`、`outputDir`）讀，不要照抄別台電腦的。Python **一定要用 `<installPath>\ComfyUI\.venv\Scripts\python.exe`**，
+     同層的 `standalone-env\python.exe` 沒有 torch。只綁 `127.0.0.1`；Desktop 開著時不要再啟動第二個；
+     記下 PID，用完只停自己啟動的那個行程。
 2. **安裝 comfy-cli**（先詢問）：`uv tool install comfy-cli`，再 `comfy --version`。
    不想安裝時，把後面的 `comfy` 一律換成 `uvx --from comfy-cli comfy`（兩種方式都實測過，1.20.0）。
    **不要**執行 `comfy install`／`launch`／`update`／`stop`——Desktop 自己管理安裝與更新。
@@ -34,6 +39,8 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
    - **依步驟 4 的 VRAM 選版本**：未滿 16GB 優先找量化版範本，例如 `image_z_image_turbo_int8`（下載約 11.3 GB，
      8GB 實測可跑）；完整版 `image_z_image_turbo`（約 19.3 GB）放不進 8GB，不要讓它靠系統記憶體硬跑。
    - 使用者自己的：🖐️ 請使用者在 ComfyUI 把工作流程存成 JSON（UI 或 API 格式都可以）。
+     或直接取使用者在 ComfyUI 生過的 PNG：它的 `prompt` 文字區塊就是完整的 API 格式工作流程
+     （`json.loads(Image.open(p).info["prompt"])`；ComfyUI 的 `.venv` 裡就有 Pillow）。
 
    工作流程檔放在專案的 `comfyui/` 資料夾。
 6. **補模型**（`verdict` 為 `missing-models` 時）：列出檔名、資料夾、大小、來源，**取得同意才下載**。
@@ -66,6 +73,15 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 10. **呈現結果**：圖片直接開給使用者看，並回報完整路徑。影片用 `comfy preview <檔>` 產縮圖；
     **agent 聽不到音樂**，請使用者自己聽。音樂與影片的注意事項見 guide（尚未實測）。
 
+## Z-Image Turbo 提示詞要點
+
+- **提示詞寫中文**：服裝與配件描述比英文準（實測英文把「連身工作服」畫成吊帶褲）。
+- **負面提示無效**：範本是 cfg 1＋`ConditioningZeroOut`。「不要文字」要寫成正面描述「畫面中沒有任何文字」；
+  即使如此，碼錶、尺、牆面這類小地方仍常長出亂碼字，**選定前放大檢查**。
+- **數不準二維方陣與分節的東西**（「2 排、每排 4 塊」實測 5 張全錯）：要數的物件排成單排，或改構圖避開計數。
+- **多角色時常互換服裝、多長出動物**：逐張對照角色設定挑選。
+- 本機生成免費，**同一段提示一次跑 4 個 seed 再挑**（`set-slot` 改 seed 後連續 `run --no-watch` 排隊）。
+
 ## 安全規則
 
 - **預設只跑本機的免費模型。** `--allow-spend`、`--where cloud`、`comfy generate`、`comfy cloud login`
@@ -83,9 +99,10 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 
 `uv tool uninstall comfy-cli` 移除工具；Windows 上的設定與工作狀態檔在 `%LOCALAPPDATA%\comfy-cli\`，
 使用者同意後才刪。下載的模型、ComfyUI output 資料夾裡的產出，都由使用者確認後再刪。
+agent 在背景啟動的 ComfyUI 行程，結束時依記下的 PID 停掉。
 
 ## 回報
 
-ComfyUI 版本與埠、GPU 與 VRAM、comfy-cli 版本、使用的範本或工作流程、改了哪些欄位、
-補下載的模型（檔名、大小、SHA256 是否相符）、prompt_id、耗時、**輸出檔完整路徑**、
-是否花費點數（應為否）、使用者仍需自己完成的步驟。
+ComfyUI 版本與埠、由誰啟動（Desktop／agent 背景啟動，是否已停止）、GPU 與 VRAM、comfy-cli 版本、
+使用的範本或工作流程、改了哪些欄位、補下載的模型（檔名、大小、SHA256 是否相符）、prompt_id、耗時、
+**輸出檔完整路徑**、是否花費點數（應為否）、使用者仍需自己完成的步驟。
