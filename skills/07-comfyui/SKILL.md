@@ -46,9 +46,7 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
      8GB 實測可跑）；完整版 `image_z_image_turbo`（約 19.3 GB）放不進 8GB，不要讓它靠系統記憶體硬跑。
    - 使用者自己的：🖐️ 請使用者在 ComfyUI 把工作流程存成 JSON（UI 或 API 格式都可以）。
      或直接取使用者在 ComfyUI 生過的 PNG：它的 `prompt` 文字區塊就是完整的 API 格式工作流程
-     （`json.loads(Image.open(p).info["prompt"])`；ComfyUI 的 `.venv` 裡就有 Pillow）。
-
-   工作流程檔放在專案的 `comfyui/` 資料夾。
+     （`json.loads(Image.open(p).info["prompt"])`；ComfyUI 的 `.venv` 裡就有 Pillow）。工作流程檔放專案的 `comfyui/`。
 6. **補模型**（`verdict` 為 `missing-models` 時）：列出檔名、資料夾、大小、來源，**取得同意才下載**。
    - 大小：對 `templates check` 給的 `url` 發 HEAD 請求讀 `X-Linked-Size`；Hugging Face 的
      `X-Linked-ETag` 就是 SHA256，下載後拿來比對。
@@ -61,6 +59,9 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 7. **改參數**：`comfy --json workflow slots <檔>` 列出可調欄位，**地址照抄**（例如 `57.text`、
    `57.seed`，是節點 id 不是標題）→ `comfy --json workflow set-slot <檔> "57.text=..." "57.seed=42"`。
    `comfy run --set` **不能搭配 `--workflow`**，只適用 comfy-cli 內建的預設流程。
+   **長中文提示或批次產生多個工作檔時，改用腳本直接改 API 格式 JSON**（長中文放指令列會被引號與 cp950 弄壞）：
+   改 `inputs.text`、`inputs.seed`、`EmptySD3LatentImage` 的 `width`／`height`、`SaveImage` 的 `filename_prefix`
+   （帶名稱與 seed，步驟 9 才對得回每一張），UTF-8 一個工作存一個檔、中文直接寫字面；批次時抽一個檔跑步驟 8。
 8. **送出前預檢**：`comfy --json run --workflow <檔> --print-prompt`（不會送出），把回傳的
    `data.prompt` 存成 `<檔>.api.json`，再 `comfy --json workflow validate --workflow <檔>.api.json`
    （只吃 API 格式，而且一定要帶 `--workflow`）。`valid` 不是 true 就停下回報。
@@ -76,6 +77,9 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
    `jobs watch` 逾時或 agent 的指令時限到了，**工作仍在 ComfyUI 上跑**：重跑 `jobs watch` 接回，
    **不要重新送出**。參考速度（Z-Image Turbo，首張含載入模型／之後）：RTX 5060 Ti 16GB 完整版 32／11 秒；
    RTX 5060 Laptop 8GB Int8 版 34.5／11.1 秒。
+   **一次排很多張時不必逐個 `jobs watch`／`download`**（只限本機 ComfyUI）：送完後在背景輪詢 `http://127.0.0.1:<埠>/queue`，
+   `queue_running`、`queue_pending` 都空了，就直接讀輸出資料夾（`system-stats` 的 `--output-directory`）依 `filename_prefix` 找檔。
+   佇列清空不代表都成功：每個 `run` 要回 `ok: true`，輸出檔數要等於送出數，少的用 `jobs watch <prompt_id>` 查錯。
 10. **呈現結果**：圖片直接開給使用者看，並回報完整路徑。影片用 `comfy preview <檔>` 產縮圖；
     **agent 聽不到音樂**，請使用者自己聽。音樂與影片的注意事項見 guide（尚未實測）。
 

@@ -2,7 +2,7 @@
 title: 'AI Agent 懶人包 #07：連接 ComfyUI'
 date: '2026-09-11'
 type: 懶人包
-version: v0.6
+version: v0.7
 status: 初版（生圖已實測，音樂與影片未實測）
 tags:
   - 懶人包
@@ -13,7 +13,7 @@ tags:
 
 # 懶人包 #07：連接 ComfyUI
 
-**版本** v0.6｜**更新日期** 2026-09-11｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.7｜**更新日期** 2026-09-13｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -326,13 +326,19 @@ comfy --json workflow set-slot comfyui/z-image.json "57.text=一隻戴墨鏡的�
 > ⚠️ **地址是節點 id，不是標題**，而且每個工作流程都不一樣。一律先跑 `slots`，**照抄**它給的地址。
 >
 > ⚠️ **`comfy run --set` 不能搭配 `--workflow`**。它只能改 comfy-cli 內建的預設流程，
-> 你自己的工作流程或範本都要用 `workflow set-slot`。
+> 你自己的工作流程或範本要用 `workflow set-slot`，或是用腳本直接改 API 格式 JSON（見下一段）。
+>
+> 💡 **提示詞很長（尤其中文），或一次要產生很多個工作檔時，改用腳本直接改 JSON**：長中文放在指令列裡，
+> 容易被 shell 的引號與編碼弄壞（Windows 主控台是 cp950）。讀入 API 格式 JSON → 改文字節點的 `inputs.text`、
+> 取樣節點的 `inputs.seed`、`EmptySD3LatentImage` 的 `width`／`height`、`SaveImage` 的 `filename_prefix` →
+> 以 UTF-8 一個工作存一個檔。節點 id 照 `slots` 查到的那組；`filename_prefix` 帶上名稱與 seed，
+> 之後才能從輸出資料夾對回每一張。批次時抽一個檔跑預檢即可。
 
 中文提示詞實測可用（Z-Image Turbo 官方標明支援中英文）。
 
 ### Z-Image Turbo 提示詞實測心得
 
-以下來自實際生成教材插圖與四格漫畫的經驗（Int8 版，筆電 8GB）：
+以下來自實際生成教材插圖與四格漫畫的經驗（Int8 版筆電 8GB、完整版桌機 16GB）：
 
 | 現象 | 做法 |
 |---|---|
@@ -342,9 +348,15 @@ comfy --json workflow set-slot comfyui/z-image.json "57.text=一隻戴墨鏡的�
 | 「2 排、每排 4 塊」這種二維方陣、分節的軌道，數量幾乎都錯（實測 5 張全錯） | 要數的東西只排**單排**，或乾脆改構圖避開計數 |
 | 兩個角色時常把服裝互換，或多長出一隻動物 | 挑候選時**逐張對照角色設定** |
 | 本機生成免費，一張只要十幾秒 | 要挑圖時，**同一段提示一次跑 4 個 seed** 再從中挑一張；只要一張時照常跑一張 |
+| 想壓掉偶爾出現的白色紙邊，加一句「四周沒有白色紙邊或邊框」，結果 12 張全部長出白紙邊（沒寫這句時約三成） | 否定語意進不了模型，「紙邊」這個詞本身就是正向訊號。**原本少見的東西不要提**，把那句拿掉、靠多跑 seed 挑 |
+| 兩個角色的動作被對調（要少女倒漆、少年拿刷子，連兩輪 8 張都是少年倒漆），把服裝寫進動作句也沒用 | 改用**畫面位置綁定**：「畫面左半邊：穿藏青色工作服的少女倒漆……畫面右半邊：穿卡其色圍裙的少年只拿著刷子」，並把角色設定改成先描述做主要動作的那個人，8 張全對 |
 
 需要挑圖時，跑 4 個 seed 的做法：`workflow set-slot` 改 seed → `run --no-watch` 拿到 prompt_id，重複 4 次
 （工作會在 ComfyUI 排隊），再逐一 `jobs watch`、`download`。
+
+一次排很多張（例如十張圖各跑 4 個 seed）時，逐一 `jobs watch` 太慢：全部送完後，在背景輪詢本機 ComfyUI 的
+`http://127.0.0.1:8188/queue`，`queue_running` 與 `queue_pending` 都空了就是整批跑完，再直接讀 ComfyUI 的輸出資料夾，
+用 `filename_prefix` 找檔。這只適用 ComfyUI 跑在本機；佇列清空不代表每張都成功，要數輸出檔數是否等於送出數。
 
 ---
 
@@ -521,6 +533,7 @@ comfy --json download <prompt_id> -o generated
 | v0.4 | 2026-09-11 | 修正步驟零方式二：啟動指令改用 `Start-Process -PassThru`（原本 `&` 前景執行會佔住 agent 的指令、拿不到 PID），含空白的路徑加 `` `" ``；明寫不帶 Desktop 的 `launchArgs`；`installations.json` 註明排除 `Comfy Cloud` 那筆；補停止與確認方式（`.venv` 的 python.exe 是 uv 啟動器，監聽埠的是 `standalone-env\python.exe` 子行程）。技能改為把啟動指令直接寫進 `SKILL.md`，因為安裝後的技能讀不到 `guides/`。於桌機用 `.venv` 的 python 跑測試腳本（綁 18188 埠）代替 ComfyUI 驗證：含空白路徑完整傳入、監聽者為子行程、停啟動器後子行程隨之結束；本版未實際以 API 模式重新啟動 ComfyUI |
 | v0.5 | 2026-09-11 | 生圖預設只跑一張，使用者要挑圖時才一次跑 4 個 seed；執行原則明列哪些要逐項確認（改參數、預檢、送出本機免費工作不必再問）；先備條件改為「已安裝 ComfyUI」，不必事先開啟（`INSTALL.md` 與 `install-all` 同步）。技能的提示詞要點精簡為做法，原因與實例留在步驟六 |
 | v0.6 | 2026-09-11 | 在另一台 RTX 5060 Ti 16GB 桌機（Comfy Desktop 全新安裝、ComfyUI 0.35.1）從零實測完整版：`uv tool install comfy-cli`、下載 bf16 三個檔共 19.26 GB（約 7 分鐘，大小與 SHA256 全數相符）。**步驟零方式二第一次實際啟動 ComfyUI 驗證**：`Start-Process` 啟動後 5.6／8.1 秒可連線，監聽者是 `standalone-env\python.exe` 子行程，停掉啟動器約 1 秒後釋放 8188。範本預設提示詞生圖，首張 31.5 秒。步驟五補上 `curl.exe -sI` 查大小的替代寫法。`SKILL.md` 未修改 |
+| v0.7 | 2026-09-13 | 移入教材站在桌機 RTX 5060 Ti 16GB 用完整版一次批次生 76 張候選的經驗：步驟六的改值說明補上「長中文提示或批次產生工作檔時，用腳本直接改 API 格式 JSON」（指令列傳長中文容易被引號與 cp950 弄壞）；挑圖段落補上「一次排很多張時輪詢本機 `/queue`、直接讀輸出資料夾」，並註明要數輸出檔數確認每張都成功；提示詞實測心得補兩條（原本少見的東西不要提、角色動作對調時用畫面左右半邊綁定）。`SKILL.md` 步驟 7、步驟 9 與提示詞要點同步補上 |
 
 ---
 
