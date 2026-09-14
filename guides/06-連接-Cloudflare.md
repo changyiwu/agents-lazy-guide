@@ -1,9 +1,9 @@
 ---
 title: 'AI Agent 懶人包 #06：連接 Cloudflare'
-date: '2026-08-18'
+date: '2026-09-14'
 type: 懶人包
-version: v0.1
-status: 初版（流程源自實際專案遷移，尚未以技能形式重跑）
+version: v0.2
+status: 初版（部署流程源自實際專案遷移；D1 段落依官方文件撰寫；皆尚未以技能形式重跑）
 tags:
   - 懶人包
   - Cloudflare
@@ -13,7 +13,7 @@ tags:
 
 # 懶人包 #06：連接 Cloudflare
 
-**版本** v0.1｜**更新日期** 2026-08-18｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.2｜**更新日期** 2026-09-14｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -24,6 +24,7 @@ tags:
 - 把一個既有的靜態網站或前端專案（Vite、React、Astro…）設定成可部署到 Cloudflare
 - 完成**首次上線**，拿到一個 `https://<專案>.<你的子網域>.workers.dev` 網址
 - 接上 **Workers Builds**，之後 push 到 Git 就自動建置上線，不用再手動部署
+- （選用）加上 **D1 資料庫**與一支小小的 API，讓網站能存取資料（留言、報名、計分…）
 
 做完之後，換任何一台電腦、任何一個 agent，都能用同一套流程再開一個新網站。
 
@@ -37,11 +38,23 @@ tags:
 |---|---|---|
 | 是什麼 | 官方命令列工具 | 讓 agent 在對話中呼叫 Cloudflare 的服務 |
 | 能不能部署 | ✅ 能 | ❌ **沒有部署工具** |
+| 能不能建立／刪除 D1、KV、R2 | ✅ 能 | ✅ 能（本懶人包只用它查看，建立走 Wrangler） |
 | 跨 agent | ✅ 四家行為完全一致 | 每個 agent 各自設定、各自授權 |
 | 跨電腦 | 跟著專案的 `package.json` 走 | 每台電腦重設一次 |
 
 **本懶人包只處理 Wrangler。** MCP 是選用的加值品：它適合拿來查官方文件、列出帳號資源、
 查建置狀態，裝不裝都不影響你部署網站。
+
+> **為什麼 MCP 能建立資源，本懶人包還是走 Wrangler**：
+>
+> 1. **可能建到別的帳號。** MCP 用你在 agent 連接器授權的帳號，Wrangler 用這台電腦 `wrangler login`
+>    的帳號，兩邊各自授權、不一定相同。用 MCP 建的資料庫若不在 Wrangler 的帳號裡，部署時會找不到。
+> 2. **資料表結構要走遷移檔。** 用 MCP 直接對正式資料庫下 `CREATE TABLE`，Wrangler 的遷移紀錄
+>    （`d1_migrations` 表）不會知道，本機與正式的結構就對不起來。
+> 3. **四家做法一致。** 只有部分 agent 接了 MCP；而且 `wrangler d1 create --update-config`
+>    會順手把 binding 寫進設定檔，MCP 建完還得手動抄 `database_id`。
+>
+> 列出資料庫、查看資源資訊這類唯讀用途，用 MCP 沒問題。刪除與還原不管用哪個工具，都由你自己執行。
 
 > Cloudflare 官方另有十幾個 MCP server（文件、Workers Bindings、Workers Builds、Observability、
 > Radar…）。其中 `https://mcp.cloudflare.com/mcp`（Code Mode）涵蓋整個 Cloudflare API，
@@ -58,6 +71,7 @@ tags:
 - [ ] 能開啟瀏覽器完成 OAuth 授權
 - [ ] 要接自動部署的話：專案已推上 GitHub 或 GitLab（可參考懶人包 #02 連接 GitHub）。
       走 GitHub Actions 那條路線（步驟九路線 B）還需要 `gh` 已登入
+- [ ] 要加 D1 的話：Wrangler 4.20 以上（步驟一裝的最新版即可）
 
 ---
 
@@ -69,6 +83,7 @@ tags:
 - [ ] `npx wrangler dev` 能在本機跑起來，深層路徑與快取標頭都正確
 - [ ] 網站已上線，用瀏覽器打得開
 - [ ] （選用）push 到主要分支後會自動建置上線
+- [ ] （選用）D1 資料庫已建立，本機與正式資料庫都套用了遷移，線上的 `/api/...` 讀寫正常
 
 ---
 
@@ -78,7 +93,12 @@ tags:
   不可因為前面同意過就自行再部署。
 - **互動式登入不可代跑。** `wrangler login` 需要瀏覽器 OAuth 與互動式終端，
   請使用者自己執行，不要改用「請把 API Token 貼給我」的做法。
-- **不要主動建立或刪除遠端資源**：自訂網域、DNS 記錄、KV、R2、D1、其他 Worker，一律不碰。
+- **不要主動建立或刪除遠端資源**：自訂網域、DNS 記錄、KV、R2、其他 Worker，一律不碰。
+- **D1 只做步驟十列出的動作，而且要當下同意**：建立資料庫、套用遷移到正式資料庫、
+  任何 `d1 execute --remote`（含 MCP 的 `d1_database_query`），每一次都先問。
+  **刪除資料庫與時間點還原由使用者自己執行**，agent 不得代跑，也不得改用 MCP 的刪除工具。
+- **D1 不主動提議。** 預設是純靜態站，使用者要求存資料時才做步驟十。
+- **建立資源與改資料表結構走 Wrangler**；Cloudflare MCP 只用來列出、查看資源（原因見上方分工說明）。
 - **修改既有檔案前先顯示現值**（`wrangler.jsonc`、`.gitignore`、lint 設定）。
 - **不要把 API Token、帳號 ID 以外的機密寫進 repo 或對話紀錄。**
 - 每個步驟失敗時給出具體排查方向，不要只說「請重試」。
@@ -196,6 +216,7 @@ npx wrangler login
 > 接自動部署（步驟八）時兩者不符會讓建置**直接失敗**，而且錯誤訊息不會明說原因。
 
 沒有 Worker 程式碼是正常的——純靜態網站不需要 `main` 欄位，這個 Worker 的唯一任務就是發檔案。
+要接資料庫時才需要程式碼，見步驟十。
 
 ---
 
@@ -218,8 +239,9 @@ npx wrangler login
 
 ## 步驟六：忽略 Wrangler 的暫存目錄
 
-`wrangler dev` 會在專案裡產生 `.wrangler/`，裡面有自動生成的暫存 worker 程式碼。
-**不處理的話，下次跑 lint 會憑空冒出一堆錯誤。**
+`wrangler dev` 會在專案裡產生 `.wrangler/`，裡面有自動生成的暫存 worker 程式碼，
+加了 D1 之後本機資料庫檔也放在這裡（`.wrangler/state/`）。
+**不處理的話，下次跑 lint 會憑空冒出一堆錯誤，本機測試資料也會被推上 Git。**
 
 `.gitignore` 加上：
 
@@ -392,6 +414,179 @@ gh run watch <run-id> --exit-status
 
 ---
 
+## 步驟十：加上 D1 資料庫與 API（選用）
+
+> **預設是純靜態站，這一步只在你需要存資料時才做**，agent 不會主動提議。
+
+靜態網站只能「發檔案」，沒辦法存資料。要讓網頁能留言、報名、記分，就需要資料庫。
+**D1** 是 Cloudflare 的 SQL 資料庫（底層是 SQLite），免費方案就能用。
+
+### 先搞懂一件事：瀏覽器不能直接連 D1
+
+D1 只能從 **Worker 程式碼**裡存取。所以加資料庫其實是兩件事：
+
+```
+瀏覽器 ──/api/notes──▶ Worker 程式碼 ──env.DB──▶ D1
+瀏覽器 ──其他路徑────▶ 靜態檔案（跟以前一樣，不經過程式碼）
+```
+
+用 `run_worker_first: ["/api/*"]` 把兩者分開：只有 `/api/` 開頭的請求會執行程式碼，
+其他請求照舊直接發檔案，免費額度與速度都不受影響。
+
+### 1. 建立資料庫（⚠️ 要你同意）
+
+agent 會先跟你確認三件事，你說好才執行：
+
+| 要確認的 | 說明 |
+|---|---|
+| 資料庫名稱 | 小寫英數與連字號，例如 `my-site-db` |
+| 地區 | 台灣選 `apac`（亞太）。**建立後不能改**，而且只是偏好，Cloudflare 不保證一定放在那裡 |
+| binding 名稱 | 程式碼裡用來叫資料庫的名字，預設 `DB`（程式碼寫 `env.DB`） |
+
+```bash
+npx wrangler d1 create my-site-db --location apac --binding DB --update-config
+```
+
+`--update-config` 會自動把設定寫進 `wrangler.jsonc`。完成後檢查是否多了這段：
+
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "my-site-db",
+    "database_id": "（d1 create 印出的 ID）"
+  }
+]
+```
+
+沒寫進去的話，把指令輸出的那段手動貼上即可。
+
+> **為什麼建立交給 agent，刪除卻要你自己來**：D1 不會公開任何東西，建錯了也能刪，
+> 所以不必像部署一樣由你親手按。刪除則不可逆，資料一去不回，一律由你自己執行。
+
+### 2. 寫遷移檔（資料表結構）
+
+不要直接對資料庫下 `CREATE TABLE`，改用**遷移檔**記錄每一次結構變更，才能在本機與正式環境重現：
+
+```bash
+npx wrangler d1 migrations create my-site-db create-notes
+```
+
+它會在 `migrations/` 產生一個帶編號的 `.sql` 檔，寫入：
+
+```sql
+CREATE TABLE notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+```
+
+> ⚠️ **已經套用過的遷移檔不要改。** Wrangler 用資料庫裡的 `d1_migrations` 表記住哪些檔案套用過，
+> 改了舊檔不會重跑。要改結構就再 `migrations create` 一份新的。
+
+### 3. 套用到本機
+
+```bash
+npx wrangler d1 migrations apply my-site-db --local
+```
+
+本機資料庫是 `.wrangler/state/` 裡的一個 SQLite 檔，跟正式資料完全分開，怎麼玩都不影響線上。
+
+### 4. 寫 API Worker
+
+`wrangler.jsonc` 加上 `main` 與 `run_worker_first`：
+
+```jsonc
+{
+  "name": "my-site",
+  "compatibility_date": "2026-09-14",
+  "main": "./worker/index.js",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "my-site-db", "database_id": "（ID）" }
+  ]
+}
+```
+
+建立 `worker/index.js`（放在 `worker/` 而不是 `src/`，避免跟前端程式碼混在一起）：
+
+```js
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/api/notes" && request.method === "GET") {
+      const { results } = await env.DB.prepare(
+        "SELECT id, body, created_at FROM notes ORDER BY id DESC LIMIT 50"
+      ).all();
+      return Response.json(results);
+    }
+
+    if (url.pathname === "/api/notes" && request.method === "POST") {
+      const data = await request.json().catch(() => null);
+      const body = data?.body;
+      if (typeof body !== "string" || body.length === 0 || body.length > 500) {
+        return Response.json({ error: "body 需為 1–500 字的文字" }, { status: 400 });
+      }
+      await env.DB.prepare("INSERT INTO notes (body) VALUES (?)").bind(body).run();
+      return Response.json({ ok: true }, { status: 201 });
+    }
+
+    return Response.json({ error: "Not found" }, { status: 404 });
+  },
+};
+```
+
+> ⚠️ **SQL 一律用 `prepare(...).bind(...)`**，不要用字串相加把使用者輸入拼進 SQL，
+> 否則任何人都能透過輸入框對你的資料庫下指令（SQL injection）。
+
+`run_worker_first` 寫成陣列需要 **Wrangler 4.20 以上**；舊版會把它當成錯誤設定。
+
+### 5. 本機驗證
+
+```bash
+npm run build
+npx wrangler dev
+```
+
+| 檢查項目 | 預期結果 |
+|---|---|
+| `GET /api/notes` | 回 `[]`（還沒有資料） |
+| `POST /api/notes`，body 為 `{"body":"測試"}` | 回 201，再 GET 就看得到 |
+| 首頁與深層路徑 | 跟加 D1 之前一樣正常 |
+| `/api/不存在` | 回 404 JSON |
+
+### 6. 套用到正式資料庫（⚠️ 要你同意）
+
+```bash
+npx wrangler d1 migrations apply my-site-db --remote
+```
+
+> ⚠️ **這一步 Wrangler 本來會問「確定要套用嗎？」，但在 agent 的執行環境裡會自動跳過。**
+> agent 執行指令的環境不是互動式終端，Wrangler 偵測到後會直接套用。所以 agent 必須**自己先**
+> 列出要套用的遷移檔、取得你的同意，才能跑這道指令。
+
+**順序很重要**：先套用遷移、再部署程式碼。反過來的話，新程式碼上線那一刻資料表還不存在，API 會直接報錯。
+
+### 7. 部署
+
+照步驟八（手動）或步驟九（自動部署）上線，D1 設定跟著 `wrangler.jsonc` 一起走，不用另外處理。
+
+> ⚠️ **API 上線後任何人都能呼叫。** 範例的 `POST /api/notes` 沒有任何驗證，
+> 知道網址的人都能寫入。正式使用前要想好：需不需要登入？要不要限制頻率？
+> 至少先確認寫入的內容不會被當成 HTML 直接顯示在網頁上。
+
+**走 GitHub Actions（路線 B）的話**：「Edit Cloudflare Workers」模板**不含 D1 權限**。
+CI 部署若出現 D1 相關的權限錯誤，到後台編輯那顆 token，加上 **Account → D1 → Edit**。
+遷移建議在本機經同意後手動套用，不要放進 CI 自動跑。
+
+---
+
 ## 依你的 Agent
 
 流程四家完全相同，只有兩個地方要注意。
@@ -434,6 +629,13 @@ gh run watch <run-id> --exit-status
 - Workers Builds 連結狀態：
 - 首次自動建置結果：
 
+【D1 資料庫】（有做步驟十才填）
+- 資料庫名稱／地區：
+- binding 名稱：
+- 已套用的遷移（本機）：
+- 已套用的遷移（正式）：
+- API 路徑與驗證結果：
+
 【使用者仍需自己完成】
 -
 ```
@@ -449,6 +651,9 @@ gh run watch <run-id> --exit-status
 | 取消自動部署（路線 A） | 後台該 Worker → Settings → Build → 中斷 Git 連結 |
 | 取消自動部署（路線 B） | 刪掉 workflow 檔，再刪 GitHub secret 與 Cloudflare 的 API Token |
 | 網站下線 | 🖐️ 使用者自己在後台刪除該 Worker（**不可逆**，agent 不得代為執行） |
+| 正式資料庫改壞了 | 🖐️ `npx wrangler d1 time-travel restore <名稱> --timestamp=<Unix 時間>`，可回到 7 天內（付費方案 30 天）任一時間點。會覆蓋現有資料，但指令會給一個 bookmark，還原錯了能再還原回來 |
+| 本機資料庫想重來 | 刪掉 `.wrangler/state/`，重跑 `migrations apply --local` |
+| 不要資料庫了 | 🖐️ 先 `npx wrangler d1 export <名稱> --remote --output backup.sql` 備份，再 `npx wrangler d1 delete <名稱>`（**不可逆**），最後從 `wrangler.jsonc` 移除 binding、刪掉 `main` 與 `run_worker_first` |
 
 刪除 Worker 後，該網址會立刻回 404。如果網址已經分享出去，考慮先保留並改成轉址，
 不要直接刪。
@@ -467,6 +672,12 @@ gh run watch <run-id> --exit-status
 | 社群分享沒有預覽圖 | `og:image`／`og:url` 還指著舊網址，或不是絕對網址 |
 | 校內網路打不開網站 | `*.workers.dev` 可能被過濾器擋掉，解法是接自訂網域，不是換平台 |
 | PowerShell 說 `&&` 不是有效分隔符號 | Windows PowerShell 5.1 不支援，指令分兩行跑 |
+| `database_id` 可以推上公開 repo 嗎？ | 可以。它只是識別碼，沒有 Cloudflare 帳號授權的人拿到也動不了資料庫 |
+| 本機 API 有資料，線上卻是空的 | 本機與正式是兩個資料庫。線上要另外 `migrations apply --remote`，資料也不會自動同步 |
+| 線上 API 報 `no such table` | 程式碼先部署了、遷移還沒套用到正式資料庫，補跑 `migrations apply --remote` |
+| `d1 create` 失敗 | 名稱已被自己帳號用過，或免費方案已滿 10 個資料庫。用 `npx wrangler d1 list` 查，舊的要不要刪由你決定 |
+| `/api/...` 回的是首頁 HTML | `run_worker_first` 沒設、寫錯，或 Wrangler 低於 4.20 |
+| 讀取次數用得很快 | D1 以「掃過的列數」計費，沒有索引的查詢會整張表掃。常用的 `WHERE` 欄位要建索引（寫成新的遷移檔） |
 
 ---
 
@@ -481,6 +692,21 @@ gh run watch <run-id> --exit-status
 
 只有想用自訂網址時才需要付費，而且付的是**網域本身的年費**，Cloudflare 的服務仍然免費。
 
+**加了 D1 之後**，只有 `/api/*` 請求會執行程式碼、計入每天 10 萬次的上限，靜態檔案照舊免費。
+D1 免費方案的額度：
+
+| 項目 | 免費方案 |
+|---|---|
+| 資料庫數量 | 10 個 |
+| 單一資料庫大小 | 500 MB |
+| 帳號總儲存量 | 5 GB |
+| 讀取 | 每天 500 萬列 |
+| 寫入 | 每天 10 萬列 |
+| 每次請求可下的查詢數 | 50 次 |
+| 時間點還原（Time Travel） | 7 天 |
+
+課堂、活動規模的網站通常遠遠用不完。超過額度時請求會失敗，不會自動扣款。
+
 ---
 
 ## 更新紀錄
@@ -488,6 +714,7 @@ gh run watch <run-id> --exit-status
 | 版本 | 日期 | 變更 |
 |------|------|------|
 | v0.1 | 2026-08-18 | 初版。流程與所有踩坑紀錄來自一次實際的網站遷移（Netlify → Cloudflare Workers，含首次部署與接上 Workers Builds），尚未以技能形式重跑驗證 |
+| v0.2 | 2026-09-14 | 新增步驟十「加上 D1 資料庫與 API」：建立資料庫、遷移檔、`run_worker_first` 分流的 API Worker、本機與正式環境的套用順序。確立同意點：建立與正式遷移由 agent 在當下同意後執行（Wrangler 在非互動環境會自動跳過自己的確認），刪除與還原由使用者執行；建立資源與改結構走 Wrangler、MCP 只用來查看（兩者授權帳號可能不同）；D1 不主動提議。補免費額度、復原與常見問題。依官方文件撰寫，尚未實測 |
 
 ---
 
@@ -497,4 +724,8 @@ gh run watch <run-id> --exit-status
 - [Workers 靜態資產文件](https://developers.cloudflare.com/workers/static-assets/)
 - [Workers Builds 文件](https://developers.cloudflare.com/workers/ci-cd/builds/)
 - [Wrangler 設定參考](https://developers.cloudflare.com/workers/wrangler/configuration/)
+- [D1 Wrangler 指令](https://developers.cloudflare.com/d1/wrangler-commands/)
+- [D1 遷移](https://developers.cloudflare.com/d1/reference/migrations/)
+- [D1 額度限制](https://developers.cloudflare.com/d1/platform/limits/)
+- [D1 時間點還原](https://developers.cloudflare.com/d1/reference/time-travel/)
 - [Cloudflare 官方 MCP server 目錄](https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/)

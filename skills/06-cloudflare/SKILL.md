@@ -1,6 +1,6 @@
 ---
 name: agent-cloudflare
-description: 連接 Cloudflare，讓 agent 能用 Wrangler 建置並部署靜態網站到 Workers。說「連接 Cloudflare」「部署到 Cloudflare」「把網站放上 Cloudflare」時載入。
+description: 連接 Cloudflare，讓 agent 能用 Wrangler 建置並部署靜態網站到 Workers，並可選擇加上 D1 資料庫與 API。說「連接 Cloudflare」「部署到 Cloudflare」「把網站放上 Cloudflare」「建立 D1 資料庫」「網站要接資料庫」時載入。
 ---
 
 # 連接 Cloudflare
@@ -9,11 +9,13 @@ description: 連接 Cloudflare，讓 agent 能用 Wrangler 建置並部署靜態
 
 ## 觀念
 
-Wrangler CLI 與 Cloudflare MCP 是兩條不同連線：**Wrangler 負責本機開發與部署**；MCP 讓 agent
-在對話中查帳號與文件，但**沒有部署工具**。本流程只處理 Wrangler，因為它在每個 agent 上行為一致；
-MCP 是選用的加值品，不裝也不影響部署。
+Wrangler CLI 與 Cloudflare MCP 是兩條**各自授權**的連線：**Wrangler 負責本機開發、部署與 D1**；
+MCP 讓 agent 在對話中查帳號、文件與資源清單，沒有部署工具，但有建立／刪除 D1、KV、R2 的工具。
+**建立資源與改資料表結構一律走 Wrangler**：MCP 授權的帳號可能跟 `wrangler login` 不是同一個，
+建錯帳號部署時會找不到資料庫；結構不走遷移檔改，本機與正式會對不起來。MCP 不裝也不影響本流程。
 
-網站放在 Workers 的「靜態資產」上：沒有 Worker 程式碼，只有一個發檔案的空殼。
+網站放在 Workers 的「靜態資產」上：只發檔案時沒有 Worker 程式碼；加上 D1 後（步驟 11），
+`/api/*` 交給一支小 Worker 處理，其他路徑照舊直接發檔案。
 
 ## 步驟
 
@@ -30,7 +32,7 @@ MCP 是選用的加值品，不裝也不影響部署。
    輸出目錄；單頁應用要加 `"not_found_handling": "single-page-application"`。
    快取標頭寫成建置輸出目錄裡的 `_headers`（來源放 `public/_headers` 讓建置自動複製）。
    **Worker 名稱（`name`）之後必須與後台的 Worker 同名**，不一致會讓自動建置直接失敗。
-7. **（選用）忽略暫存目錄**：`wrangler dev` 會產生 `.wrangler/`，內含會被 lint 掃到的暫存程式碼。
+7. **（選用）忽略暫存目錄**：`wrangler dev` 會產生 `.wrangler/`，內含會被 lint 掃到的暫存程式碼與本機 D1 資料。
    把 `.wrangler/` 加進 `.gitignore`，並加進 lint 設定的忽略清單，否則 lint 會無故失敗。
 8. **（選用）本機驗證**：`npx wrangler dev`，確認首頁、深層路徑（單頁應用應回 200）、
    快取標頭都正確後再上線。
@@ -45,7 +47,7 @@ MCP 是選用的加值品，不裝也不影響部署。
     | agent 能代做的 | 幾乎沒有（授權是 OAuth，無 CLI 對應） | 除了貼 secret 以外全部 |
     | 設定放哪 | 後台，改動都要進去點 | repo 裡的 yml，進版控、可 review |
     | 能否部署前擋測試 | 否 | **能**（測試沒過就不上線） |
-    | 長期憑證 | 無 | 有一顆 API Token 存在 |
+    | 長期憑證 | 無 | 有一顆 API Token |
 
     **沒有密碼管理器的人建議選 A**：B 的 token 只會完整顯示一次，沒存下來的話，
     下一個 repo 要再用就得重產一顆。（但已經設好的 B 不必為此拆掉——token 存在
@@ -73,11 +75,36 @@ MCP 是選用的加值品，不裝也不影響部署。
 
     **從 B 換回 A**（順序反了會有一段空窗期，Cloudflare 站更新不了）：
     先接好 A → 確認自動部署成功一次 → 刪掉 workflow 檔 → 最後才刪 token 與 secret。
+11. **（選用）加上 D1 資料庫與 API**：預設是純靜態站，**只在使用者要求存資料時才做，不主動提議**。
+    標 ⚠️ 的子步驟每次都要**當下**取得同意。
+    1. ⚠️ **建立資料庫**：先向使用者確認資料庫名稱（小寫英數與連字號）、地區（台灣用 `apac`；
+       **建立後不能改**，且只是偏好不保證）、binding 名稱（預設 `DB`），同意後才執行
+       `npx wrangler d1 create <名稱> --location apac --binding DB --update-config`。
+       確認 `wrangler.jsonc` 多了含 `database_id` 的 `d1_databases`；沒寫入就把輸出的片段手動貼上。
+       名稱重複或免費方案已滿 10 個資料庫會失敗：回報後停下，**不要自行刪除舊資料庫**。
+    2. **寫遷移檔**：`npx wrangler d1 migrations create <名稱> <說明>`，在產生的 `migrations/*.sql`
+       寫 `CREATE TABLE`。**已套用過的遷移檔不要改**，要改結構就新增一份。
+    3. **套用到本機**：`npx wrangler d1 migrations apply <名稱> --local`。
+    4. **API Worker**：`wrangler.jsonc` 加 `"main": "./worker/index.js"`，`assets` 加
+       `"run_worker_first": ["/api/*"]`（Wrangler ≥ 4.20）。`worker/index.js` 用
+       `export default { async fetch(request, env) {…} }` 處理 `/api/*`，未匹配回 404 JSON。
+       查詢**一律** `env.DB.prepare("… WHERE id = ?").bind(值)`，不可把使用者輸入拼進 SQL 字串。
+    5. **本機驗證**：`npx wrangler dev`，打 `/api/…` 確認讀寫成功，且非 `/api` 路徑仍正常發檔案。
+    6. ⚠️ **套用到正式資料庫**：agent 的執行環境不是互動式終端，Wrangler 會**自動跳過自己的確認**，
+       所以先列出待套用的遷移檔、取得同意，再跑 `npx wrangler d1 migrations apply <名稱> --remote`。
+       **必須早於**部署會用到新資料表的程式碼。
+    7. **部署**：API 上線後**任何人都能呼叫**，寫入類端點沒有驗證機制時要先提醒。部署照步驟 9 或 10。
+       路線 B 的 token 模板**不含 D1 權限**：CI 報 D1 權限錯誤時，請使用者在 token 加 Account → D1 → Edit。
 
 ## 安全規則
 
 - **部署是對外發布，每次都要取得明確同意**；agent 不得自行執行 `wrangler deploy`。
-- 不自動建立自訂網域、不改 DNS、不建立或刪除任何 Worker、KV、R2、D1 資源。
+- 不自動建立自訂網域、不改 DNS、不建立或刪除任何 Worker、KV、R2。
+- **D1 只做步驟 11 列出的動作**：`d1 create`、`migrations apply --remote`、任何 `d1 execute --remote`
+  （含 MCP 的 `d1_database_query`）每次都要當下同意。MCP 只用來列出、查看資源。
+- **刪除資料庫與還原一律 🖐️ 由使用者自己執行**（`d1 delete`、`d1 time-travel restore` 或後台），
+  agent 不得代跑，也不得改用 MCP 的刪除工具。
+- 正式資料的匯出檔（`d1 export` 的 `.sql`）不得放進 repo。
 - **不要求使用者把 API Token 貼進對話、Markdown 或 repo**；本機一律走 `wrangler login` 的 OAuth。
   唯一的例外是步驟 10 路線 B 的 CI 憑證：那顆 token 由**使用者自己**用 `gh secret set` 貼進
   GitHub 的加密 secret store，**不經過對話、不進任何檔案**，所以不違反本條。agent 全程看不到它，
@@ -90,7 +117,13 @@ MCP 是選用的加值品，不裝也不影響部署。
 `npx wrangler logout` 解除本機授權。已部署的 Worker 要下線，須由使用者自己在 Cloudflare 後台
 刪除（不可逆，agent 不得代為執行）。移除本流程新增的檔案即可回到未接 Cloudflare 的狀態。
 
+D1 出錯時 🖐️ 使用者執行 `npx wrangler d1 time-travel restore <名稱> --timestamp=<Unix 時間>`，
+可還原到 7 天內（付費方案 30 天）任一時間點，會覆蓋現有資料，但會給一個 bookmark 可再還原回來。
+不要資料庫了：🖐️ 使用者先 `npx wrangler d1 export <名稱> --remote --output <備份.sql>`，
+再 `npx wrangler d1 delete <名稱>`（不可逆），最後從 `wrangler.jsonc` 移除該 binding。
+
 ## 回報
 
 Node 與 Wrangler 版本、登入帳號、帳號子網域、Worker 名稱與網址、產生或修改的檔案清單、
-本機驗證結果、部署狀態、自動部署走哪一條路線與其狀態、使用者仍需自己完成的互動步驟。
+本機驗證結果、部署狀態、自動部署走哪一條路線與其狀態、
+D1 名稱／地區／binding 與已套用的遷移（本機、正式各自）、API 路徑、使用者仍需自己完成的互動步驟。

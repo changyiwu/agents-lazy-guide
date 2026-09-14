@@ -38,7 +38,7 @@
 | 03 | `skills/03-obsidian` | `agent-obsidian` | Obsidian vault 連接 | Node.js、vault |
 | 04 | `skills/04-firebase` | `agent-firebase` | Firebase / Firestore MCP | Node.js、Google 帳號 |
 | 05 | `skills/05-draw` | `agent-draw` | 生圖（內建或 gpt-image-2），含 `draw.py` | uv |
-| 06 | `skills/06-cloudflare` | `agent-cloudflare` | Wrangler 登入與部署靜態網站到 Workers | Node.js 20+、Cloudflare 帳號 |
+| 06 | `skills/06-cloudflare` | `agent-cloudflare` | Wrangler 登入、部署靜態網站到 Workers，可選加 D1 資料庫與 API | Node.js 20+、Cloudflare 帳號 |
 | 07 | `skills/07-comfyui` | `agent-comfyui` | 用 comfy-cli 操作本機 ComfyUI：改參數、送出、取回生成結果 | uv、已安裝的 ComfyUI、NVIDIA 顯卡 8GB 以上 |
 | — | `skills/install-all` | `agent-install-all` | 一次安裝全部 | 無 |
 

@@ -22,6 +22,7 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 - 2026-08-03：Antigravity 正名為 **Antigravity 2.0 桌面 App**（非 IDE），全 repo 相關描述改寫
 - 2026-08-18：新增 #06 連接 Cloudflare
 - 2026-09-10：新增 #07 連接 ComfyUI，定案走官方 `comfy-cli`（不走 MCP）
+- 2026-09-14：#06 加入 D1 資料庫與 API Worker；`TEMPLATE.md` 的 SKILL 行數放寬為目標 120／上限 150
 
 ## 目標與路線圖
 
@@ -131,6 +132,13 @@ agents-lazy-guide/
 - **技能目錄會被其他 session 或 `sync-skills` 同時改動**。要回報目錄狀態就**當場重列一次**，不要引用記憶或 `handoff.md` 的舊紀錄。
 - **#04 Firebase 的預設是「完全不碰線上安全規則」**（採 Claude 版最新做法）；Codex 舊版的規則部署流程已降級為需明確同意的進階章節。改動這段前先確認這個取捨還成立。
 - **#07 ComfyUI 一律走官方 `comfy-cli`，不走 MCP，也不執行 `comfy skills install`**（它會寫入 `~/.claude/` 與家目錄的 `AGENTS.md`，繞過本 repo 的安裝規則）。需要官方深入資料時用 `comfy skills show` 臨時讀。改動這段前先確認這個取捨還成立。
+- **#06 預設是純靜態站，D1 只在使用者要求存資料時才做，不主動提議。**
+  **建立與正式資料庫遷移由 agent 在使用者當下同意後執行**（不算對外發布，故不比照 `wrangler deploy`）；
+  **刪除資料庫與 time-travel 還原一律由使用者自己執行**，也不得改用 MCP 的刪除工具。
+  **建立資源與改資料表結構走 Wrangler，Cloudflare MCP 只用來查看**——兩者各自授權、帳號可能不同，
+  且結構不走遷移檔會讓本機與正式對不起來（並非 MCP 會繞過同意點，這個說法是錯的）。
+  agent 的非互動環境會讓 `d1 migrations apply --remote` 自動跳過 Wrangler 的確認，同意必須由技能本文要求 agent 先問。
+  改動這段前先確認這個取捨還成立。
 
 ## 三個檔案的職責（依「時效性」分家，不是依「詳細程度」）
 
