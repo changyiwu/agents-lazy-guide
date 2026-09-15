@@ -5,7 +5,8 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 
 # 連接 ComfyUI
 
-完整教學見 `guides/07-連接-ComfyUI.md`。以下是執行流程。
+完整教學見 `guides/07-連接-ComfyUI.md`。以下是通用執行流程；**特定模型的版本選擇、欄位地址、提示詞要點與實測數據**
+放在本技能資料夾的 `models/`，用到該模型時先讀（見〈模型筆記〉）。
 
 ## 觀念
 
@@ -29,7 +30,8 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
      $p = Start-Process "<installPath>\ComfyUI\.venv\Scripts\python.exe" -WorkingDirectory "<installPath>\ComfyUI" -WindowStyle Hidden -PassThru -ArgumentList "main.py --listen 127.0.0.1 --port 8188 --disable-auto-launch --extra-model-paths-config `"<yaml>`" --output-directory `"<outputDir>`" --input-directory `"<inputDir>`""
      ```
 
-     **必須用 `Start-Process`**（`&` 會佔住指令到逾時、拿不到 PID）；含空白的路徑要用 `` `" `` 包住。輪詢 `system_stats` 有回應再繼續。
+     **必須用 `Start-Process`**（`&` 會佔住指令到逾時、拿不到 PID）；含空白的路徑要用 `` `" `` 包住。
+     輪詢 `system_stats` 有回應再繼續（實測 6 秒到 71 秒不等，要給足時間）。
      只綁 `127.0.0.1`；**刻意不帶** Desktop 的 `launchArgs`（`--enable-manager`）。記下 `$p.Id`，停止方式見「復原」。
 2. **安裝 comfy-cli**（先詢問）：`uv tool install comfy-cli`，再 `comfy --version`。
    不想安裝時，把後面的 `comfy` 一律換成 `uvx --from comfy-cli comfy`（兩種方式都實測過，1.20.0）。
@@ -41,9 +43,10 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 5. **選工作流程**（先問使用者要做什麼）：
    - 官方範本：`comfy --json templates ls --type image`（或 `audio`／`video`）→
      `comfy --json templates check <名稱>` 看 `verdict`、缺哪些模型、`api.dependent` 是否為 true（付費節點）→
-     `comfy --json templates fetch <名稱> -o <檔>`。
-   - **依步驟 4 的 VRAM 選版本**：未滿 16GB 優先找量化版範本，例如 `image_z_image_turbo_int8`（下載約 11.3 GB，
-     8GB 實測可跑）；完整版 `image_z_image_turbo`（約 19.3 GB）放不進 8GB，不要讓它靠系統記憶體硬跑。
+     `comfy --json templates fetch <名稱> -o <檔>`。`templates check` 要 ComfyUI 在線（否則回 `server_not_running`），`fetch` 不用。
+     名稱以 `api_` 開頭的範本是付費雲端節點。
+   - **依步驟 4 的 VRAM 選版本**：該模型有〈模型筆記〉就先讀再選。沒有筆記時，模型檔總大小超過 VRAM 就先找量化版範本或量化檔，
+     不要讓它靠系統記憶體硬跑。
    - 使用者自己的：🖐️ 請使用者在 ComfyUI 把工作流程存成 JSON（UI 或 API 格式都可以）。
      或直接取使用者在 ComfyUI 生過的 PNG：它的 `prompt` 文字區塊就是完整的 API 格式工作流程
      （`json.loads(Image.open(p).info["prompt"])`；ComfyUI 的 `.venv` 裡就有 Pillow）。工作流程檔放專案的 `comfyui/`。
@@ -59,9 +62,10 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 7. **改參數**：`comfy --json workflow slots <檔>` 列出可調欄位，**地址照抄**（例如 `57.text`、
    `57.seed`，是節點 id 不是標題）→ `comfy --json workflow set-slot <檔> "57.text=..." "57.seed=42"`。
    `comfy run --set` **不能搭配 `--workflow`**，只適用 comfy-cli 內建的預設流程。
-   **長中文提示或批次產生多個工作檔時，改用腳本直接改 API 格式 JSON**（長中文放指令列會被引號與 cp950 弄壞）：
-   改 `inputs.text`、`inputs.seed`、`EmptySD3LatentImage` 的 `width`／`height`、`SaveImage` 的 `filename_prefix`
-   （帶名稱與 seed，步驟 9 才對得回每一張），UTF-8 一個工作存一個檔、中文直接寫字面；批次時抽一個檔跑步驟 8。
+   **長提示詞（尤其中文）、要改 `slots` 沒列出的欄位，或批次產生多個工作檔時，改用腳本直接改 API 格式 JSON**
+   （長中文放指令列會被引號與 cp950 弄壞）：改 `inputs.text`、`inputs.seed`、`EmptySD3LatentImage` 的 `width`／`height`、
+   `SaveImage` 的 `filename_prefix`（帶名稱與 seed，步驟 9 才對得回每一張），UTF-8 一個工作存一個檔、中文直接寫字面；
+   子圖裡的節點 id 形如 `105:126`，依 `_meta.title` 找比猜 id 可靠；批次時抽一個檔跑步驟 8。
 8. **送出前預檢**：`comfy --json run --workflow <檔> --print-prompt`（不會送出），把回傳的
    `data.prompt` 存成 `<檔>.api.json`，再 `comfy --json workflow validate --workflow <檔>.api.json`
    （只吃 API 格式，而且一定要帶 `--workflow`）。`valid` 不是 true 就停下回報。
@@ -75,22 +79,26 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
    ```
 
    `jobs watch` 逾時或 agent 的指令時限到了，**工作仍在 ComfyUI 上跑**：重跑 `jobs watch` 接回，
-   **不要重新送出**。參考速度（Z-Image Turbo，首張含載入模型／之後）：RTX 5060 Ti 16GB 完整版 32／11 秒；
-   RTX 5060 Laptop 8GB Int8 版 34.5／11.1 秒。
+   **不要重新送出**。影片與音樂單次常超過 2 分鐘，送出後放背景輪詢。各模型參考速度見〈模型筆記〉。
    **一次排很多張時不必逐個 `jobs watch`／`download`**（只限本機 ComfyUI）：送完後在背景輪詢 `http://127.0.0.1:<埠>/queue`，
    `queue_running`、`queue_pending` 都空了，就直接讀輸出資料夾（`system-stats` 的 `--output-directory`）依 `filename_prefix` 找檔。
    佇列清空不代表都成功：每個 `run` 要回 `ok: true`，輸出檔數要等於送出數，少的用 `jobs watch <prompt_id>` 查錯。
-10. **呈現結果**：圖片直接開給使用者看，並回報完整路徑。影片用 `comfy preview <檔>` 產縮圖；
-    **agent 聽不到音樂**，請使用者自己聽。音樂與影片的注意事項見 guide（尚未實測）。
+   **使用者要比較速度時**：每步秒數、模型佔用（`… MB Staged`）、原生運算格式（`Native ops`）看 `GET /internal/logs/raw` 的
+   `entries[].m`（緩衝有筆數上限，長工作邊跑邊存）；單一工作耗時用 `GET /history/<prompt_id>` 裡 `execution_start` 與
+   `execution_success` 的 timestamp 相減。提示詞編碼被快取時總耗時會偏短，比較版本看每步秒數。
+10. **呈現結果**：圖片直接開給使用者看，並回報完整路徑。影片、音樂在輸出資料夾的子資料夾（依 `filename_prefix`，例如 `video\`、`audio\`）。
+    影片用 ComfyUI `.venv` 的 python 以 PyAV 抽幀：`c = av.open(p)`、`[f.to_image() for f in c.decode(video=0)]`，
+    取首、1/3、2/3、末幀用 Pillow 拼成一張再看。**agent 聽不到聲音**（影片音軌與音樂），請使用者自己聽。
 
-## Z-Image Turbo 提示詞要點
+## 模型筆記
 
-- **提示詞寫中文**，服裝與配件逐項描述。
-- **負面提示無效**：「不要文字」改寫成「畫面中沒有任何文字」；小地方仍常長出亂碼字，**選定前放大檢查**。
-- **數不準方陣、多角色常互換服裝或多長出動物**：要數的物件排單排；多角色逐張對照設定挑選。
-- **不要在提示詞裡提到原本少見的東西，連「沒有 X」都不行**：加一句「四周沒有白色紙邊或邊框」之後，12 張候選全部長出白紙邊（沒寫這句時約三成）。「畫面中沒有任何文字」能用，是因為文字本來就常冒出來；原本少見的東西，提到它就是在召喚它。出現這種情形就把那句拿掉，靠多跑 seed 挑。
-- **兩個角色的動作被對調時，改用畫面位置綁定**：「少女倒漆、少年拿刷子」即使把服裝寫進動作句，8 張仍全是少年倒漆；改寫成「畫面左半邊：穿藏青色工作服的少女雙手捧罐倒漆……畫面右半邊：穿卡其色圍裙的少年只拿著一支刷子」，並把角色設定改成先描述做主要動作的那個人，8 張全對。
-- 預設只跑一張；**使用者要挑圖或說「多給幾張」時**，同一段提示跑 4 個 seed（`set-slot` 改 seed 後連續 `run --no-watch` 排隊）。
+| 檔案 | 範本 | 內容 |
+|---|---|---|
+| `models/z-image-turbo.md` | `image_z_image_turbo`、`image_z_image_turbo_int8` | 依 VRAM 選範本、欄位地址、參考速度、提示詞要點 |
+| `models/minimax-h3.md` | `video_minimax_h3_i2v` 等 | 依顯卡選主模型（含 NVFP4 下載資訊）、欄位地址、加速 LoRA 開關、實測數據 |
+| `models/minimax-music3.md` | `audio_minimax_music_3` | 檔案、欄位地址、實測數據 |
+
+實測出新模型的設定或數據時，新增一份 `models/<模型>.md` 並補進這張表，不要寫進本檔。
 
 ## 安全規則
 

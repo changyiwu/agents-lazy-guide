@@ -117,7 +117,7 @@
       "title": "連接 ComfyUI",
       "guide": "guides/07-連接-ComfyUI.md",
       "skillDir": "skills/07-comfyui",
-      "status": "初版（生圖已實測，音樂與影片未實測）"
+      "status": "初版（生圖、MiniMax H3 影片、Music 3 音樂已實測）"
     },
     {
       "no": "--",

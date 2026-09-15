@@ -2,18 +2,20 @@
 title: 'AI Agent 懶人包 #07：連接 ComfyUI'
 date: '2026-09-11'
 type: 懶人包
-version: v0.7
-status: 初版（生圖已實測，音樂與影片未實測）
+version: v0.8
+status: 初版（生圖、MiniMax H3 影片、Music 3 音樂已實測）
 tags:
   - 懶人包
   - ComfyUI
   - 生圖
+  - 影片
+  - 音樂
   - 本機模型
 ---
 
 # 懶人包 #07：連接 ComfyUI
 
-**版本** v0.7｜**更新日期** 2026-09-13｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.8｜**更新日期** 2026-09-15｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -56,7 +58,7 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
 - [ ] 已安裝 **ComfyUI**（建議用 [ComfyUI Desktop](https://www.comfy.org/download)，一鍵安裝；要不要開啟 Desktop 見步驟零）
 - [ ] 有 NVIDIA 顯卡，**VRAM 8GB 以上**（實測 RTX 5060 Laptop 8GB、RTX 5060 Ti 16GB；VRAM 越大能跑的模型越多）
 - [ ] 已安裝 **uv**（沒有的話先做懶人包 #00 環境建置）
-- [ ] 磁碟有足夠空間放模型（生圖模型一組約 11–20 GB，依顯卡選的版本而定，見步驟四；影片模型更大）
+- [ ] 磁碟有足夠空間放模型（生圖模型一組約 11–20 GB，依顯卡選的版本而定，見步驟四；影片模型更大，MiniMax H3 一組約 34–41 GB，見步驟九）
 
 ---
 
@@ -139,7 +141,7 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
    - **只帶模型、輸入、輸出三組路徑**，模型與產出才會和 Desktop 共用。`installations.json` 裡 Desktop 自己的
      `launchArgs`（例如 `--enable-manager`）**刻意不帶**：API 模式只給 agent 送工作，用不到擴充管理器。
    - `--listen` 只綁 `127.0.0.1`，不要改成 `0.0.0.0`（會讓同網段的人都能送工作）。
-   - 載入需要一點時間，輪詢 `system_stats` 到有回應再繼續（16GB 桌機實測 5.6–8.1 秒）。
+   - 載入需要一點時間，輪詢 `system_stats` 到有回應再繼續（16GB 桌機實測 5.6–8.1 秒；另一台 16GB 桌機某次要 71 秒，要給足時間）。
 5. **用完停掉自己啟動的那個行程**。不要停 Desktop 開的 ComfyUI，也不要用 `comfy stop`：
 
    ```powershell
@@ -421,10 +423,148 @@ comfy --json download <prompt_id> -o generated
 
 ---
 
-## 步驟九：音樂與影片（尚未實測）
+## 步驟九：影片與音樂
 
 流程和生圖**完全相同**：選範本 → `templates check` → 補模型 → 改參數 → 預檢 → 送出取回。
-本機可跑的範本例如：
+差別在模型大很多、一次跑好幾分鐘，以及 **agent 聽不到聲音**（影片音軌與音樂都要請使用者自己聽）。
+
+> 範本名稱以 `api_` 開頭的（例如 `api_minimax_h3_max_i2v`）是付費雲端節點，不是用你的顯卡。
+>
+> **agent 執行時讀的是技能資料夾的 `models/minimax-h3.md`、`models/minimax-music3.md`**（隨技能安裝）；
+> 本節是給人看的完整版，多了取捨原因與量測方式。
+
+### 影片：MiniMax H3（已實測）
+
+MiniMax H3 一次生成畫面和立體聲音軌（對白、音效、配樂），官方原生畫布短邊 768、最長約 15 秒、24fps。主模型分兩種：
+
+| 主模型 | 用途 | 範本 |
+|---|---|---|
+| FL2VA | 文字轉影片（不接圖）、首幀／首尾幀轉影片 | `video_minimax_h3_i2v`、`video_minimax_h3_t2v` |
+| Ref2VA | 多張參考圖、參考影片、參考聲音 | `video_minimax_h3_r2v`、`video_minimax_h3_multiframe_reference` |
+
+以下實測都是 FL2VA 的 `video_minimax_h3_i2v`。
+
+#### 1. 依顯卡選主模型
+
+官方只提供 int8（和同大小的 fp8）版，**19.5 GB，16GB 顯卡放不下**。社群有更小的量化版：
+
+| 版本 | 主模型大小 | 要擴充節點 | 適用 |
+|---|---|---|---|
+| 官方 `minimax_h3_fl2va_pruned_int8_convrot` | 19.53 GB | 不用 | 24GB 以上，或不是 RTX 50 系列的顯卡 |
+| 社群 NVFP4 `minimax_h3_fl2va_pruned_nvfp4_all`（[MATLOWAI/minimax-h3-nvfp4](https://huggingface.co/MATLOWAI/minimax-h3-nvfp4)） | 11.67 GB | 不用 | **RTX 50 系列 16GB（✅ 實測）** |
+| 社群 int4／int8 混合（[Abiray](https://huggingface.co/Abiray/Minimax-H3-nvfp4-INT4-INT8-Convrot)） | 14.81 GB | 不用 | 作者標需約 15.5 GB，16GB 幾乎沒有餘裕；未實測 |
+| 社群 GGUF Q4_K_M（Abiray、unsloth 等） | 約 10.7 GB | **要**（ComfyUI-GGUF） | 本篇不採用：要執行第三方程式碼，ComfyUI 啟動訊息也建議改用原生格式 |
+
+- **NVFP4 只有 RTX 50 系列（Blackwell）能原生運算**。其他顯卡會退回較慢的做法，比 int8 還慢（MATLOWAI 說明），請用官方 int8
+- 畫質代價：MATLOWAI 實測權重誤差約 9.4%（官方 int8 約 1.0%），同一個 seed 跑出來是「同場景、表現略不同」
+- Abiray 另有 Ref2VA 的 NVFP4 版，未實測
+- 其餘檔案用範本列的官方檔：文字編碼器 `qwen3vl_32b_minimax_h3_nvfp4_awq` 14.61 GB（官方註明不限 RTX 50 系列）、
+  影像 VAE 4.85 GB、聲音 VAE 0.56 GB、8 步加速 LoRA `minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16` 1.82 GB。
+  NVFP4 路線整套約 33.5 GB，int8 路線約 41.4 GB
+- 範本另外列的 4 步 768p LoRA 與 `minimaxh3_*` 風格 embedding 是選用的，不下載也能跑
+
+**實測下載**：NVFP4 主模型 12,528,637,032 bytes，3.6 分鐘（約 55 MB/s），SHA256 `d171fefc…28e8` 與 Hugging Face 相符。
+
+#### 2. 範本設定
+
+`workflow slots` 實測的地址（`video_minimax_h3_i2v`）：
+
+| 地址 | 欄位 | 範本預設 | 實測設定 |
+|---|---|---|---|
+| `114.image` | 首幀圖檔名（要先放進 input 資料夾） | `transparent_rgb_gaming_mouse.png` | 使用者既有的 1:1 圖（複製過去） |
+| `115.aspect_ratio`／`115.megapixels` | 比例／畫素量 | `1:1 (Square)`／0.4 | 同左（= 640×640） |
+| `105.value_1` | 長度（秒） | 5 | 3 |
+| `105.noise_seed` | seed | 隨機大數 | 42 |
+| `105.unet_name` | 主模型 | int8 | NVFP4 或 int8 |
+| `92.filename_prefix` | 輸出檔名（含 `video/` 子資料夾） | `video/MiniMax_H3` | `video/h3test_<版本>_s42` |
+
+- 幀數由秒數自動換算成 17k＋5 的格子（24fps）：3 秒 = 73 幀、5 秒 = 124 幀
+- 畫素量對照（範本附註，16:9）：0.4 = 864×480、0.98 = 1344×768（官方 768p）
+- 範本的示範首幀要從 GitHub 下載。**用使用者自己的圖就不必下載**；要用示範圖，先問
+- 提示詞很長，直接改 API 格式裡 `MiniMaxH3ImageToVideo` 節點的 `inputs.prompt`（步驟六的腳本做法）。範本示範的寫法是：
+  先寫整體風格與場景，再分 `SHOT 1:`、`SHOT 2:` 描述鏡頭與動作，最後 `Audio:` 描述聲音
+- ⚠️ **8 步加速 LoRA 預設是關的**：範本的 `Boolean (Enable Lightning LoRA)` 為 false，實際跑的是原始模型 20 步。
+  要 8 步就在 API 格式裡找 `_meta.title` 為 `Boolean (Enable Lightning LoRA)` 的節點，把 `inputs.value` 改成 true。
+  依標題找：節點在子圖裡，id 是 `105:126` 這種形式，範本改版可能會變
+- 預檢會出現節點 119、120 的 `node_not_reachable_from_output` 警告：範本留下沒接上輸出的節點，執行時會被略過，可忽略
+- 產出在 ComfyUI output 資料夾的 `video\`。`comfy download` 用在影片上未實測，本次直接讀輸出資料夾
+
+#### 3. 實測數據
+
+環境：Windows 11、ComfyUI 0.35.1（agent 背景啟動）、RTX 5060 Ti 16GB、Ryzen 5 9600X、系統記憶體 62 GB、comfy-cli 1.20.0。
+條件相同：同一張 1:1 動漫首幀、同一段英文提示詞、seed 42、640×640、3 秒（73 幀）。產出 mp4 含 AAC 32 kHz 立體聲音軌，約 0.5–0.6 MB。
+
+| | NVFP4 20 步 | int8 20 步 | **NVFP4＋8 步 LoRA** |
+|---|---|---|---|
+| 主模型佔用（紀錄的 Staged） | 11,944 MB | 19,995 MB（超過 VRAM） | 11,944 MB |
+| 每步 | 5.23 秒 | 6.15 秒 | 5.52 秒 |
+| 生成階段 | 104 秒 | 123 秒 | **44 秒** |
+| 總耗時 | 141 秒（含首次文字編碼） | 137 秒（沿用快取的提示詞編碼） | **74 秒** |
+| 系統記憶體最少剩 | 9.6 GB | **4.4 GB** | 10.3 GB |
+
+- **16GB 的 RTX 50 系列建議預設 NVFP4＋8 步 LoRA**，要做正式作品再切 20 步
+- int8 放不下 VRAM，部分權重留在系統記憶體，每步慢約 17%，記憶體幾乎用光；影片再長就有記憶體不足的風險
+- GPU 最高用量三者都約 15.5 GB：ComfyUI 的動態 VRAM 會盡量用滿，**這個數字不能用來判斷放不放得下**，要看紀錄的 Staged
+- 畫面：取首、1/3、2/3、末幀並排，三者構圖與動作（鏡頭推近、拉捲尺）一致，縮圖尺寸看不出 NVFP4 變差；8 步 LoRA 色彩稍飽和。
+  動作流暢度與聲音由使用者自行確認
+- 文字編碼器 14,956 MB、影像 VAE 4,965 MB，和主模型依序載入，不同時佔用
+- 這次背景啟動 ComfyUI 花了 71 秒才連上（步驟零寫的 5.6–8.1 秒是另一台），輪詢要給足時間
+
+**怎麼量**：
+
+- 每步秒數與模型載入：`GET http://127.0.0.1:8188/internal/logs/raw` 的 `entries[].m`（tqdm 進度列、`Staged`、`Native ops`）。
+  紀錄緩衝有筆數上限，長工作要邊跑邊存
+- 確認 NVFP4 走原生運算：紀錄出現 `Native ops: … nvfp4 …`
+- 單一工作耗時：`GET /history/<prompt_id>` 的 `status.messages` 裡，`execution_start` 與 `execution_success` 的 timestamp 相減
+- **比速度看「每步秒數」與生成階段**；總耗時會因提示詞編碼被快取而偏短
+- 顯卡與記憶體：背景每 2 秒記一次 `nvidia-smi --query-gpu=memory.used,utilization.gpu` 與系統可用記憶體
+
+### 音樂：MiniMax Music 3（已實測）
+
+範本 `audio_minimax_music_3`，由風格描述與歌詞生成含人聲的完整歌曲，最長約 5 分鐘。三個檔都放得進 16GB：
+
+| 檔案 | 參數量／格式 | 大小 |
+|---|---|---|
+| `diffusion_models/minimax_music3_dit_fp16` | 2.5B／fp16 | 4.58 GB |
+| `text_encoders/minimax_music3_text_encoder_pruned_int8_convrot` | 8.4B／int8 | 8.57 GB |
+| `vae/minimax_music3_dav` | fp32 | 0.20 GB |
+
+範本另列 `minimax_music3_dit_int8_convrot`，是給小顯卡的替代版，16GB 不需要；未滿 16GB 未實測。
+
+| 地址 | 欄位 | 範本預設 |
+|---|---|---|
+| `37.caption` | 風格描述，依序寫 Global Metadata → Vocal Details → Arrangement | lo-fi hip-hop 範例 |
+| `37.lyrics` | 歌詞；`[Intro]` `[Verse]` `[Chorus]` `[Bridge]` `[Outro]` `[Instrumental]` 標籤才會決定段落結構 | 英文範例 |
+| `37.max_duration` | 長度（秒），最長約 300 | 60 |
+| `37.seed` | seed | 固定值 |
+| `35.filename_prefix` | 輸出檔名（含 `audio/` 子資料夾），mp3 V0 | `audio/audio_minimax_music3` |
+
+- 流程分三段：文字編碼器先逐 token 生成（紀錄的 `AR sampling`）→ DiT 30 步（cfg 1.7）→ 解碼
+- 範本有分塊解碼（Tiled decode）選項：長歌 VRAM 不夠時用，稍慢、分塊接縫可能有痕跡
+- 實測（同上環境，範本預設、只改檔名）：60 秒歌總耗時 **140 秒**，其中 AR 1501 token 52 秒（約 28.6 token/秒）、
+  DiT 30 步 75 秒（2.53 秒/步）；系統記憶體最少剩 29 GB；產出 mp3 60.0 秒、44.1 kHz 立體聲、1.96 MB
+- **agent 聽不到音樂**，好不好聽要請使用者自己聽
+
+### 讓 agent 看影片
+
+`comfy preview` 未實測。實測可行的做法是用 ComfyUI `.venv` 的 Python（內建 PyAV 與 Pillow）抽幀拼圖：
+
+```python
+import av
+from PIL import Image
+c = av.open("影片.mp4")
+frames = [f.to_image() for f in c.decode(video=0)]
+picks = [frames[i] for i in (0, len(frames)//3, 2*len(frames)//3, len(frames)-1)]
+w, h = picks[0].size
+sheet = Image.new("RGB", (w * 4, h))
+for i, im in enumerate(picks):
+    sheet.paste(im, (i * w, 0))
+sheet.save("影片_抽幀.png")
+```
+
+同一個容器也讀得到解析度、幀數、長度與音軌格式（`c.streams.video[0]`、`c.streams.audio`）。
+
+### 其他音樂與影片範本（尚未實測）
 
 | 類型 | 範本名稱 | 模型 |
 |---|---|---|
@@ -439,7 +579,6 @@ comfy --json download <prompt_id> -o generated
 - **音樂**：ACE-Step 的拍號填 `"4"` 而不是 `"4/4"`；文字編碼與空白音訊的長度必須一致；
   輸出格式是 FLAC；純音樂要把歌詞設為空字串
 - **影片**：一定要有 SaveVideo 節點才會存檔；不要寫死 fps
-- **看結果**：影片可用 `comfy preview <檔>` 產生縮圖給 agent 看；**agent 聽不到音樂**，要請使用者自己聽
 
 ---
 
@@ -520,6 +659,13 @@ comfy --json download <prompt_id> -o generated
 | 可以不裝 comfy-cli、直接打 ComfyUI 的 HTTP API 嗎？ | 可以：`POST /prompt` 送 API 格式工作流程、輪詢 `GET /history/<prompt_id>`、`GET /view` 取圖（實測可用）。但少了送出前預檢與付費節點攔截，本篇不採用 |
 | 背景啟動後 agent 的指令一直卡住到逾時 | 用了 `& python.exe main.py` 前景執行。改用 `Start-Process -PassThru`，見步驟零方式二 |
 | 行程清單裡跑的是 `standalone-env\python.exe`，不是 `.venv` 的 | 正常。`.venv` 的 python.exe 是啟動器，會帶起它並帶入 `.venv` 的套件，見步驟零方式二第 5 點 |
+| MiniMax H3 放得進 16GB 顯卡嗎？ | 官方 int8 主模型 19.5 GB 放不下。RTX 50 系列改用社群 NVFP4 版（11.67 GB，實測整個放進顯卡）；其他顯卡用 int8，會慢且很吃系統記憶體，見步驟九 |
+| H3 範本跑了 20 步，比預期慢 | 範本的 8 步加速 LoRA 預設關閉，把 `Boolean (Enable Lightning LoRA)` 改成 true，見步驟九 |
+| 怎麼確認 NVFP4 真的用上 4-bit 運算？ | ComfyUI 紀錄出現 `Native ops: … nvfp4 …`；不是 RTX 50 系列會退回較慢的運算 |
+| 顯卡用量一直接近滿載，是不是放不下？ | 不一定。動態 VRAM 會盡量用滿，要看紀錄的 `… MB Staged` 是否小於 VRAM |
+| `templates check` 報 `server_not_running`，`templates fetch` 卻可以 | `check` 要對照 ComfyUI 已安裝的模型，ComfyUI 必須在線；`fetch` 只下載範本 |
+| 預檢警告節點 119／120 `node_not_reachable_from_output` | H3 範本留下沒接上輸出的節點，執行時會被略過，可忽略 |
+| 模型相關的設定寫在技能哪裡？ | 技能資料夾的 `models/<模型>.md`，隨技能安裝，agent 用到該模型時才讀；`SKILL.md` 只放通用流程 |
 
 ---
 
@@ -534,6 +680,7 @@ comfy --json download <prompt_id> -o generated
 | v0.5 | 2026-09-11 | 生圖預設只跑一張，使用者要挑圖時才一次跑 4 個 seed；執行原則明列哪些要逐項確認（改參數、預檢、送出本機免費工作不必再問）；先備條件改為「已安裝 ComfyUI」，不必事先開啟（`INSTALL.md` 與 `install-all` 同步）。技能的提示詞要點精簡為做法，原因與實例留在步驟六 |
 | v0.6 | 2026-09-11 | 在另一台 RTX 5060 Ti 16GB 桌機（Comfy Desktop 全新安裝、ComfyUI 0.35.1）從零實測完整版：`uv tool install comfy-cli`、下載 bf16 三個檔共 19.26 GB（約 7 分鐘，大小與 SHA256 全數相符）。**步驟零方式二第一次實際啟動 ComfyUI 驗證**：`Start-Process` 啟動後 5.6／8.1 秒可連線，監聽者是 `standalone-env\python.exe` 子行程，停掉啟動器約 1 秒後釋放 8188。範本預設提示詞生圖，首張 31.5 秒。步驟五補上 `curl.exe -sI` 查大小的替代寫法。`SKILL.md` 未修改 |
 | v0.7 | 2026-09-13 | 移入教材站在桌機 RTX 5060 Ti 16GB 用完整版一次批次生 76 張候選的經驗：步驟六的改值說明補上「長中文提示或批次產生工作檔時，用腳本直接改 API 格式 JSON」（指令列傳長中文容易被引號與 cp950 弄壞）；挑圖段落補上「一次排很多張時輪詢本機 `/queue`、直接讀輸出資料夾」，並註明要數輸出檔數確認每張都成功；提示詞實測心得補兩條（原本少見的東西不要提、角色動作對調時用畫面左右半邊綁定）。`SKILL.md` 步驟 7、步驟 9 與提示詞要點同步補上 |
+| v0.8 | 2026-09-15 | 步驟九改為「影片與音樂」，於 RTX 5060 Ti 16GB＋62 GB 記憶體桌機（ComfyUI 0.35.1、agent 背景啟動、comfy-cli 1.20.0）實測 **MiniMax H3** 與 **MiniMax Music 3**：H3 官方 int8 主模型 19.5 GB 放不進 16GB，改下載社群 NVFP4 版（MATLOWAI，12,528,637,032 bytes，3.6 分鐘，SHA256 相符），ComfyUI 原生支援；640×640、3 秒同 seed 比較 NVFP4 20 步 141 秒（5.23 秒/步）、int8 20 步 6.15 秒/步且系統記憶體只剩 4.4 GB、NVFP4＋8 步 LoRA 74 秒；發現範本的加速 LoRA 預設關閉。Music 3 範本預設 60 秒歌 140 秒。補上量速度的方法（`/internal/logs/raw`、`/history` timestamp）與用 PyAV 抽幀讓 agent 看影片。**技能結構調整**：模型專屬內容從 `SKILL.md` 移到技能資料夾的 `models/`（`z-image-turbo.md`、`minimax-h3.md`、`minimax-music3.md`，隨技能安裝），`SKILL.md` 只留通用流程與索引表（`agents.md` 同步加入這條規則） |
 
 ---
 

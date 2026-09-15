@@ -78,7 +78,7 @@ agents-lazy-guide/
 │   ├── 04-firebase/SKILL.md
 │   ├── 05-draw/SKILL.md ＋ draw.py
 │   ├── 06-cloudflare/SKILL.md
-│   ├── 07-comfyui/SKILL.md
+│   ├── 07-comfyui/SKILL.md ＋ models/（各模型筆記，隨技能安裝）
 │   └── install-all/SKILL.md
 └── scripts/
     └── install.ps1      讀 agents.json，裝到各 agent 的正確目錄
@@ -132,6 +132,9 @@ agents-lazy-guide/
 - **技能目錄會被其他 session 或 `sync-skills` 同時改動**。要回報目錄狀態就**當場重列一次**，不要引用記憶或 `handoff.md` 的舊紀錄。
 - **#04 Firebase 的預設是「完全不碰線上安全規則」**（採 Claude 版最新做法）；Codex 舊版的規則部署流程已降級為需明確同意的進階章節。改動這段前先確認這個取捨還成立。
 - **#07 ComfyUI 一律走官方 `comfy-cli`，不走 MCP，也不執行 `comfy skills install`**（它會寫入 `~/.claude/` 與家目錄的 `AGENTS.md`，繞過本 repo 的安裝規則）。需要官方深入資料時用 `comfy skills show` 臨時讀。改動這段前先確認這個取捨還成立。
+- **#07 的模型專屬內容（版本選擇、欄位地址、提示詞要點、實測數據）寫在 `skills/07-comfyui/models/<模型>.md`**，
+  `SKILL.md` 只留通用流程與〈模型筆記〉索引表。新增模型就新增一份筆記並補進索引表，不要再寫進 `SKILL.md` 本文。
+  筆記隨技能安裝（`install.ps1`、`sync-skills` 都遞迴複製），可以放執行必需的內容；給人看的原因與量測方式仍放 guide。
 - **#06 預設是純靜態站，D1 只在使用者要求存資料時才做，不主動提議。**
   **建立與正式資料庫遷移由 agent 在使用者當下同意後執行**（不算對外發布，故不比照 `wrangler deploy`）；
   **刪除資料庫與 time-travel 還原一律由使用者自己執行**，也不得改用 MCP 的刪除工具。
