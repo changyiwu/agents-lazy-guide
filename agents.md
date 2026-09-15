@@ -25,7 +25,7 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 - 2026-09-14：#06 加入 D1 資料庫與 API Worker；`TEMPLATE.md` 的 SKILL 行數放寬為目標 120／上限 150
 - 2026-09-15：#07 實測 MiniMax H3 影片與 Music 3 音樂；技能加入附屬檔結構（#07 `models/`、#06 `references/`），實測 Codex、OpenCode、Antigravity 都讀得到，通則寫入 `TEMPLATE.md`〈附屬檔〉
 - 2026-09-15：#07 H3 在 16GB RTX 50 系列的預設由 NVFP4＋8 步 LoRA 改為 NVFP4 20 步；步驟九加入官方撰寫指南的台詞格式（guide v0.9）
-- 2026-09-15：#07 實測 Z-Image 在圖中寫繁體中文（48 張招牌），結論是限制在字形不在字數，寫入 `models/z-image-turbo.md`〈畫面中的中文字〉（guide v0.10）
+- 2026-09-15：#07 實測 Z-Image 在圖中寫繁體中文（48 張招牌），結論是限制在字形不在字數，寫入 `models/z-image-turbo.md`〈畫面中的中文字〉（guide v0.10）；海報實測確認猜不到哪些繁體字會錯，海報與資訊圖表改用無字底圖＋疊字（v0.11）
 
 ## 目標與路線圖
 
