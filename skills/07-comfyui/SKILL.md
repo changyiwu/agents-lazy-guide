@@ -95,7 +95,7 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 | 檔案 | 範本 | 內容 |
 |---|---|---|
 | `models/z-image-turbo.md` | `image_z_image_turbo`、`image_z_image_turbo_int8` | 依 VRAM 選範本、欄位地址、參考速度、提示詞要點 |
-| `models/minimax-h3.md` | `video_minimax_h3_i2v` 等 | 依顯卡選主模型與步數（含 NVFP4 下載資訊）、清快取、欄位地址、加速 LoRA 開關、實測數據 |
+| `models/minimax-h3.md` | `video_minimax_h3_i2v` 等 | 依顯卡選主模型與步數（含 NVFP4 下載資訊）、清快取、欄位地址、加速 LoRA 開關、台詞提示詞格式、實測數據 |
 | `models/minimax-music3.md` | `audio_minimax_music_3` | 檔案、欄位地址、風格描述要點（更高、更有力）、實測數據 |
 
 實測出新模型的設定或數據時，新增一份 `models/<模型>.md` 並補進這張表，不要寫進本檔。

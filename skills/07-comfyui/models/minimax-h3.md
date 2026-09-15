@@ -13,8 +13,8 @@
 | RTX 50 系列 16GB | 社群 NVFP4 主模型，20 步 | 官方 int8 主模型＋8 步 LoRA（送出前先清快取） |
 | 24GB 以上，或不是 RTX 50 系列 | 官方 int8 主模型（範本預設），20 步 | int8＋8 步 LoRA |
 
-- **避免 NVFP4＋8 步 LoRA**：5 秒真人揮手時手指出現紅綠色殘影、手形糊掉；同 seed 的 NVFP4 20 步、int8 兩種都沒有（各只測一個 seed）。
-  只在使用者明確要快速打草稿時用。
+- **避免 NVFP4＋8 步 LoRA**：兩組真人快速動作都出現殘影——揮手時手指紅綠色殘影、手形糊掉；招手的手臂半透明、轉身跑開時身體糊成半透明。
+  同 seed 的 NVFP4 20 步、int8 兩種都沒有（兩組都只測 seed 42）。只在使用者明確要快速打草稿時用。
 - 主模型檔（`diffusion_models`）：
   - 社群 NVFP4 `minimax_h3_fl2va_pruned_nvfp4_all.safetensors`，12,528,637,032 bytes。照 `SKILL.md` 步驟 6 先問、驗證後才改名：來源
     `https://huggingface.co/MATLOWAI/minimax-h3-nvfp4/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_nvfp4_all.safetensors`，
@@ -35,7 +35,7 @@
 |---|---|---|---|
 | `114.image` | `114` | 首幀檔名（檔要先在 input 資料夾） | 示範圖 `transparent_rgb_gaming_mouse.png` |
 | `115.aspect_ratio`、`115.megapixels` | `115` | 比例、畫素量 | `1:1 (Square)`、0.4（= 640×640；16:9 為 864×480；`9:16 (Portrait Widescreen)` 為 480×864） |
-| `105.value_1` | `105:111` 的 `value` | 長度（秒），自動換算成 17k＋5 幀（24fps） | 5（= 124 幀；3 秒 = 73 幀） |
+| `105.value_1` | `105:111` 的 `value` | 長度（秒），自動換算成 17k＋5 幀（24fps） | 5（= 124 幀，也是訓練範圍下限；3 秒 = 73 幀） |
 | `105.noise_seed` | `105:15` | seed | 隨機 |
 | `105.unet_name` | `105:6` | 主模型 | int8 |
 | — | `105:104` 的 `prompt` | 提示詞 | 範本示範 |
@@ -53,11 +53,27 @@ API 格式的子圖 id 可能隨範本改版變動，改之前用 `class_type`�
 - 預檢出現節點 119、120 的 `node_not_reachable_from_output` 警告：範本留下的未接線節點，可忽略。
 - 官方畫布短邊 768（上限 768×1344）、最長約 15 秒；比實測更長、更大的設定未實測，會更慢、更吃記憶體。
 
+## 角色要說台詞：官方撰寫指南的格式
+
+MiniMax 官方撰寫指南（Hugging Face `MiniMaxAI/MiniMax-H3` 的 `docs/VIDEO_PROMPT_WRITING_GUIDE_base_en.md`）的首幀轉影片寫法。
+結構寫英文，台詞保留原文；說話者用 `(S1)`、`(S2)`，台詞包成 `<d>[語言] 原文</d>`：
+
+```
+For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.
+integrated_multimodal_description: [Shot 1] Live-action, cinematic, ... The young woman shown in <Picture 1> ...（場景、外觀、鏡頭、說話前的動作）, and the playful, sweet young woman (S1) says: <d>[Chinese] 哈、哈、哈，相公，你來追我啊。</d> Right after the line she ...（說完後的動作）
+overall_soundscape: Soft waves washing against the rocks, a gentle sea breeze, and her light footsteps ...
+non_diegetic_music: None.
+```
+
+- 三個欄位名稱照順序寫，後面接冒號與空格；不要配樂就寫 `None.`。
+- 官方範例只示範 `[English]`；中文寫 `[Chinese]`、繁體字台詞，四種跑法都正常生成，嘴巴在說台詞的時段有說話的開合。**發音與嘴型是否對得上 agent 聽不到，請使用者自己聽。**
+- 5 秒放一句短台詞（約 12 個中文字）加前後動作就滿了；語氣寫在 `(S1)` 前面（例如 `playful, sweet`）。
+
 ## 實測（RTX 5060 Ti 16GB、系統記憶體 62 GB、ComfyUI 0.35.1）
 
 同一組內用同一張首幀、提示詞與 seed 42。主模型佔用（紀錄的 Staged）：NVFP4 11,944 MB、int8 19,995 MB（超過 VRAM）。
 
-**640×640、3 秒**（動漫首幀，鏡頭推近、拉捲尺）：
+**640×640、3 秒**（動漫首幀，鏡頭推近、拉捲尺；範本格式提示詞）：
 
 | | NVFP4＋8 步 | NVFP4 20 步 | int8 20 步 |
 |---|---|---|---|
@@ -65,17 +81,28 @@ API 格式的子圖 id 可能隨範本改版變動，改之前用 `class_type`�
 | 總耗時 | 74 秒 | 141 秒 | 137 秒（沿用快取的提示詞編碼） |
 | 系統記憶體最少剩 | 10.3 GB | 9.6 GB | 4.4 GB |
 
-**480×864（9:16）、5 秒**（寫實真人首幀，撥頭髮、揮手、笑）：
+**480×864（9:16）、5 秒，第一組**（寫實台灣女生首幀，撥頭髮、揮手、笑；範本格式提示詞）：
 
 | | NVFP4＋8 步 | NVFP4 20 步 | int8＋8 步 | int8 20 步 |
 |---|---|---|---|---|
 | 每步 | 13.3 秒 | 12.8 秒 | 14.5 秒 | 13.9 秒 |
 | 總耗時 | 159 秒 | 296 秒 | 156 秒 | 317 秒 |
 | 系統記憶體最少剩 | 未量 | 10.9 GB | 3.9 GB | 4.7 GB |
-| 手部 | ❌ 紅綠色殘影 | ✅ | ✅ | ✅ |
+| 畫面 | ❌ 手指紅綠色殘影 | ✅ | ✅ | ✅ |
 
+**480×864（9:16）、5 秒，第二組**（寫實日本女生首幀，大笑、說一句中文台詞、招手、轉身跑開；官方格式提示詞；每支送出前都清快取）：
+
+| | NVFP4＋8 步 | NVFP4 20 步 | int8＋8 步 | int8 20 步 |
+|---|---|---|---|---|
+| 每步 | 13.7 秒 | 12.9 秒 | 14.5 秒 | 13.9 秒 |
+| 總耗時 | 160 秒 | 296 秒 | 156 秒 | 318 秒 |
+| 系統記憶體最少剩 | 11.8 GB | 12.1 GB | 6.3 GB | 6.5 GB |
+| 畫面 | ❌ 招手手臂半透明、跑開時身體糊成半透明 | ✅ | ✅ | ✅ |
+
+- 兩組 5 秒的耗時差不到 3%：換提示詞格式、加台詞不影響速度。
 - 估時間：幀數 1.7 倍、畫素量相近時，每步慢 2.3–2.5 倍，不能照幀數線性推。8 步 LoRA 總時間約是 20 步的一半。
-- int8 的系統記憶體最少只剩約 4 GB；影片更長或更大時先提醒使用者有記憶體不足的風險。
+- int8 的系統記憶體最少只剩 4–6.5 GB；影片更長或更大時先提醒使用者有記憶體不足的風險。
 - GPU 用量都約 15.5 GB（動態 VRAM 會盡量用滿），不能拿來判斷放不放得下，要看 Staged。
-- 看畫面時抽 5 幀並排（首、1/5、1/3、2/3、末）；手部與快速動作的破綻出現在中段，只看首尾幀看不出來。
+- 看畫面時抽 5 幀並排（首、1/5、1/3、2/3、末）；手部與快速動作的破綻出現在中段與跑開的末段，只看首幀看不出來。
+  有台詞時另抽 1–4 秒每 0.5 秒一格，看嘴型與手勢。
 - 產出 mp4 含 AAC 32 kHz 立體聲，聲音請使用者自己聽。

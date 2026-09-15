@@ -492,6 +492,28 @@ MiniMax H3 一次生成畫面和立體聲音軌（對白、音效、配樂），
 - 預檢會出現節點 119、120 的 `node_not_reachable_from_output` 警告：範本留下沒接上輸出的節點，執行時會被略過，可忽略
 - 產出在 ComfyUI output 資料夾的 `video\`。`comfy download` 用在影片上未實測，本次直接讀輸出資料夾
 
+#### 角色要說台詞：官方撰寫指南的格式
+
+範本示範的「風格場景 → `SHOT 1:` → `Audio:`」寫法沒有示範對白。要角色開口說話時，改用 MiniMax 官方撰寫指南的格式
+（[VIDEO_PROMPT_WRITING_GUIDE_base_en.md](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_base_en.md)；
+官方另有 [h3-prompt-writing 技能](https://github.com/MiniMax-AI/MiniMax-H3/blob/main/skills/h3-prompt-writing/SKILL.md)）：
+
+```
+For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.
+integrated_multimodal_description: [Shot 1] Live-action, cinematic, natural photorealistic look. The young Japanese woman shown in <Picture 1> stands on a seaside promenade at dusk, ...（外觀、場景、鏡頭）. She tilts her head and laughs brightly and playfully, then looks straight at the camera with a teasing smile and beckons toward the camera with one hand, and the playful, sweet young woman (S1) says: <d>[Chinese] 哈、哈、哈，相公，你來追我啊。</d> Right after the line she turns around and runs away along the promenade, glancing back over her shoulder with a laugh, while the camera gently follows her.
+overall_soundscape: Soft waves washing against the rocks, a gentle sea breeze, and her light footsteps on the stone promenade as she runs away.
+non_diegetic_music: None.
+```
+
+- **第一行是首幀對齊句**，表示 `<Picture 1>` 在 0.00 秒完整出現
+- **三個欄位照順序寫**：`integrated_multimodal_description`（依時間寫畫面、動作、說話者與台詞）、`overall_soundscape`（環境音、腳步聲等）、
+  `non_diegetic_music`（配樂，不要就寫 `None.`）。欄位名稱後接冒號與空格
+- **結構寫英文，台詞保留原文**。說話者用 `(S1)`、`(S2)` 標記，台詞包成 `<d>[語言] 原文</d>`；語氣寫在 `(S1)` 前面
+- 官方範例只示範 `[English]`。C 組中文寫 `[Chinese]`、台詞用繁體字，四種跑法都正常生成，說台詞的時段嘴巴有開合；
+  **發音對不對、嘴型對不對得上，agent 聽不到，要使用者自己聽**
+- 5 秒放一句短台詞（約 12 個中文字）加上前後動作就滿了。節點說明寫訓練範圍是 124–362 幀（約 5–15 秒），台詞多就拉長
+- 網路上有些第三方整理只用引號包台詞（例如 Runware 的文件），沒有 `(S1)`、`<d>`；本篇以官方指南為準
+
 #### 3. 實測數據
 
 環境：Windows 11、ComfyUI 0.35.1（agent 背景啟動）、RTX 5060 Ti 16GB、Ryzen 5 9600X、系統記憶體 62 GB、comfy-cli 1.20.0。
@@ -520,12 +542,26 @@ MiniMax H3 一次生成畫面和立體聲音軌（對白、音效、配樂），
 
 NVFP4＋8 步是接在生圖與音樂之後直接跑；其餘三支送出前都先清快取（見下方）。
 
+**C 組：同 B 組規格，換人物、動作與提示詞格式**。寫實日本女生首幀（Z-Image 生成），動作是大笑、看鏡頭說一句中文台詞、招手、轉身沿步道跑開，
+提示詞改用官方撰寫指南的格式（見上方〈角色要說台詞〉），四支都在送出前清快取（同日傍晚）：
+
+| | NVFP4＋8 步 LoRA | NVFP4 20 步 | int8＋8 步 LoRA | int8 20 步 |
+|---|---|---|---|---|
+| 主模型佔用（紀錄的 Staged） | 11,944 MB | 11,944 MB | 19,995 MB | 19,995 MB |
+| 每步 | 13.7 秒 | 12.9 秒 | 14.5 秒 | 13.9 秒 |
+| 總耗時 | 160 秒 | 296 秒 | 156 秒 | 318 秒 |
+| 系統記憶體最少剩 | 11.8 GB | 12.1 GB | 6.3 GB | 6.5 GB |
+| 畫面（5 幀並排＋1–4 秒每 0.5 秒一格） | **❌ 招手的手臂半透明、跑開時身體與白上衣糊成半透明** | ✅ 乾淨，勾手指招手清楚 | ✅ 乾淨，招手變成往前指 | ✅ 乾淨，勾手指招手清楚 |
+
+四支都照提示詞演完：歪頭大笑 → 看鏡頭、2.0–3.5 秒嘴巴有說話的開合 → 招手 → 轉身跑開。台詞發音與嘴型由使用者試聽。
+
 **結論（16GB 的 RTX 50 系列）**：
 
-- **預設用 NVFP4 20 步**：B 組四種裡畫面乾淨、系統記憶體最寬裕，每步也最快
-- **要快用 int8＋8 步 LoRA**：總時間約一半、畫面乾淨；但部分權重留在系統記憶體，最少只剩約 4 GB，**送出前一定要先清快取**
-- **NVFP4＋8 步 LoRA 只拿來打草稿**：A 組縮圖看不出問題，B 組手部快速動作就出現彩色殘影。同樣 NVFP4 改 20 步沒有，同樣 8 步 LoRA 換 int8 也沒有，
-  問題出在這個組合。兩組各只跑一個 seed，換 seed 是否每次都出現尚未驗證
+- **預設用 NVFP4 20 步**：B、C 兩組都畫面乾淨、系統記憶體最寬裕，每步也最快
+- **要快用 int8＋8 步 LoRA**：總時間約一半、畫面乾淨；但部分權重留在系統記憶體，最少只剩 4–6.5 GB，**送出前一定要先清快取**
+- **NVFP4＋8 步 LoRA 只拿來打草稿**：A 組縮圖看不出問題，B、C 兩組換了人物、動作與提示詞格式，**快速動作都出現殘影**。同樣 NVFP4 改 20 步沒有，
+  同樣 8 步 LoRA 換 int8 也沒有，問題出在這個組合。兩組都只跑 seed 42，換 seed 是否每次都出現尚未驗證
+- B、C 兩組耗時差不到 3%：換提示詞格式、加台詞不影響速度
 - v0.8 建議「預設 NVFP4＋8 步 LoRA」，是只看 A 組縮圖得出的，B 組推翻了這個建議
 
 **其他觀察**：
@@ -725,7 +761,8 @@ sheet.save("影片_抽幀.png")
 | `templates check` 報 `server_not_running`，`templates fetch` 卻可以 | `check` 要對照 ComfyUI 已安裝的模型，ComfyUI 必須在線；`fetch` 只下載範本 |
 | 預檢警告節點 119／120 `node_not_reachable_from_output` | H3 範本留下沒接上輸出的節點，執行時會被略過，可忽略 |
 | 模型相關的設定寫在技能哪裡？ | 技能資料夾的 `models/<模型>.md`，隨技能安裝，agent 用到該模型時才讀；`SKILL.md` 只放通用流程 |
-| H3 影片的手指出現紅綠色殘影、手形糊掉 | 實測只出現在「NVFP4＋8 步 LoRA」組合。16GB 的 RTX 50 系列改用 NVFP4 20 步，或 int8＋8 步 LoRA，見步驟九 |
+| H3 影片的手指出現紅綠色殘影、手臂或身體變半透明 | 實測兩組真人快速動作都只出現在「NVFP4＋8 步 LoRA」組合。16GB 的 RTX 50 系列改用 NVFP4 20 步，或 int8＋8 步 LoRA，見步驟九 |
+| H3 影片要角色說台詞怎麼寫？ | 用官方撰寫指南的格式：首幀對齊句＋`integrated_multimodal_description`／`overall_soundscape`／`non_diegetic_music` 三欄，說話者 `(S1)`、台詞 `<d>[Chinese] 原文</d>`，見步驟九〈角色要說台詞〉 |
 | 跑完生圖或音樂再跑影片，系統記憶體只剩幾 GB | ComfyUI 把前面的模型留在記憶體裡。佇列清空後 `POST /free`（body `{"unload_models": true, "free_memory": true}`），見步驟九 |
 | Music 3 能直接調音高或力度嗎？ | 沒有數值欄位，只能改風格描述（調性、唱法、編曲）與換 seed，見步驟九 |
 
@@ -743,7 +780,7 @@ sheet.save("影片_抽幀.png")
 | v0.6 | 2026-09-11 | 在另一台 RTX 5060 Ti 16GB 桌機（Comfy Desktop 全新安裝、ComfyUI 0.35.1）從零實測完整版：`uv tool install comfy-cli`、下載 bf16 三個檔共 19.26 GB（約 7 分鐘，大小與 SHA256 全數相符）。**步驟零方式二第一次實際啟動 ComfyUI 驗證**：`Start-Process` 啟動後 5.6／8.1 秒可連線，監聽者是 `standalone-env\python.exe` 子行程，停掉啟動器約 1 秒後釋放 8188。範本預設提示詞生圖，首張 31.5 秒。步驟五補上 `curl.exe -sI` 查大小的替代寫法。`SKILL.md` 未修改 |
 | v0.7 | 2026-09-13 | 移入教材站在桌機 RTX 5060 Ti 16GB 用完整版一次批次生 76 張候選的經驗：步驟六的改值說明補上「長中文提示或批次產生工作檔時，用腳本直接改 API 格式 JSON」（指令列傳長中文容易被引號與 cp950 弄壞）；挑圖段落補上「一次排很多張時輪詢本機 `/queue`、直接讀輸出資料夾」，並註明要數輸出檔數確認每張都成功；提示詞實測心得補兩條（原本少見的東西不要提、角色動作對調時用畫面左右半邊綁定）。`SKILL.md` 步驟 7、步驟 9 與提示詞要點同步補上 |
 | v0.8 | 2026-09-15 | 步驟九改為「影片與音樂」，於 RTX 5060 Ti 16GB＋62 GB 記憶體桌機（ComfyUI 0.35.1、agent 背景啟動、comfy-cli 1.20.0）實測 **MiniMax H3** 與 **MiniMax Music 3**：H3 官方 int8 主模型 19.5 GB 放不進 16GB，改下載社群 NVFP4 版（MATLOWAI，12,528,637,032 bytes，3.6 分鐘，SHA256 相符），ComfyUI 原生支援；640×640、3 秒同 seed 比較 NVFP4 20 步 141 秒（5.23 秒/步）、int8 20 步 6.15 秒/步且系統記憶體只剩 4.4 GB、NVFP4＋8 步 LoRA 74 秒；發現範本的加速 LoRA 預設關閉。Music 3 範本預設 60 秒歌 140 秒。補上量速度的方法（`/internal/logs/raw`、`/history` timestamp）與用 PyAV 抽幀讓 agent 看影片。**技能結構調整**：模型專屬內容從 `SKILL.md` 移到技能資料夾的 `models/`（`z-image-turbo.md`、`minimax-h3.md`、`minimax-music3.md`，隨技能安裝），`SKILL.md` 只留通用流程與索引表（`agents.md` 同步加入這條規則） |
-| v0.9 | 2026-09-15 | 同一台桌機（ComfyUI 0.35.1、agent 背景啟動）做一次完整的「照片 → 影片 → 歌曲」實測。**H3 B 組**：Z-Image 生的寫實人像當首幀，480×864（9:16）、5 秒（124 幀）、seed 42，NVFP4／int8 × 8 步 LoRA／20 步四種組合：NVFP4＋8 步 159 秒但揮手時手指出現紅綠色殘影，NVFP4 20 步 296 秒（12.8 秒/步、系統記憶體最少剩 10.9 GB）、int8＋8 步 156 秒（最少剩 3.9 GB）、int8 20 步 317 秒，後三者畫面乾淨。**16GB 的 RTX 50 系列預設由 NVFP4＋8 步 LoRA 改為 NVFP4 20 步**，要快用 int8＋8 步 LoRA（各只測一個 seed）。補上 `POST /free` 清快取（可用記憶體 9.4 → 47.8 GB）、9:16 的畫素量、API 格式節點 id、看紀錄的 `patches attached` 確認 LoRA、首幀是生成圖時照圖描述人物、抽幀要取到中段。**Music 3**：120 秒中文歌三版（英文風格描述＋繁體中文歌詞），各 286–288 秒，AR 3001 token 105 秒、DiT 5.2–5.4 秒/步，耗時與長度成正比；補上沒有音高數值欄位時怎麼用風格描述讓聲音更高、更有力，以及描述裡不寫真實歌手名字。Z-Image 補 864×1536 首張 19.5 秒。`models/minimax-h3.md`、`models/minimax-music3.md`、`models/z-image-turbo.md` 與 `SKILL.md` 的索引表同步更新 |
+| v0.9 | 2026-09-15 | 同一台桌機（ComfyUI 0.35.1、agent 背景啟動）做一次完整的「照片 → 影片 → 歌曲」實測。**H3 B 組**：Z-Image 生的寫實人像當首幀，480×864（9:16）、5 秒（124 幀）、seed 42，NVFP4／int8 × 8 步 LoRA／20 步四種組合：NVFP4＋8 步 159 秒但揮手時手指出現紅綠色殘影，NVFP4 20 步 296 秒（12.8 秒/步、系統記憶體最少剩 10.9 GB）、int8＋8 步 156 秒（最少剩 3.9 GB）、int8 20 步 317 秒，後三者畫面乾淨。**16GB 的 RTX 50 系列預設由 NVFP4＋8 步 LoRA 改為 NVFP4 20 步**，要快用 int8＋8 步 LoRA（各只測一個 seed）。補上 `POST /free` 清快取（可用記憶體 9.4 → 47.8 GB）、9:16 的畫素量、API 格式節點 id、看紀錄的 `patches attached` 確認 LoRA、首幀是生成圖時照圖描述人物、抽幀要取到中段。**Music 3**：120 秒中文歌三版（英文風格描述＋繁體中文歌詞），各 286–288 秒，AR 3001 token 105 秒、DiT 5.2–5.4 秒/步，耗時與長度成正比；補上沒有音高數值欄位時怎麼用風格描述讓聲音更高、更有力，以及描述裡不寫真實歌手名字。Z-Image 補 864×1536 首張 19.5 秒。**H3 C 組**（同日傍晚補測，當第二筆佐證）：換成 Z-Image 生的日本女生首幀，動作改為大笑、說一句中文台詞、招手、轉身跑開，提示詞改用官方撰寫指南的格式（首幀對齊句＋三欄、`(S1)`、`<d>[Chinese] …</d>`），四種組合耗時與 B 組差不到 3%，NVFP4＋8 步 LoRA 再次出現殘影（招手手臂半透明、跑開時身體糊成半透明），其他三種乾淨；步驟九新增〈角色要說台詞〉，常見問題補一條。`models/minimax-h3.md`、`models/minimax-music3.md`、`models/z-image-turbo.md` 與 `SKILL.md` 的索引表同步更新 |
 
 ---
 
