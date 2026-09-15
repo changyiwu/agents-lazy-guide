@@ -23,6 +23,7 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 - 2026-08-18：新增 #06 連接 Cloudflare
 - 2026-09-10：新增 #07 連接 ComfyUI，定案走官方 `comfy-cli`（不走 MCP）
 - 2026-09-14：#06 加入 D1 資料庫與 API Worker；`TEMPLATE.md` 的 SKILL 行數放寬為目標 120／上限 150
+- 2026-09-15：#07 實測 MiniMax H3 影片與 Music 3 音樂；技能加入附屬檔結構（#07 `models/`、#06 `references/`），實測 Codex、OpenCode、Antigravity 都讀得到，通則寫入 `TEMPLATE.md`〈附屬檔〉
 
 ## 目標與路線圖
 
@@ -77,7 +78,7 @@ agents-lazy-guide/
 │   ├── 03-obsidian/SKILL.md
 │   ├── 04-firebase/SKILL.md
 │   ├── 05-draw/SKILL.md ＋ draw.py
-│   ├── 06-cloudflare/SKILL.md
+│   ├── 06-cloudflare/SKILL.md ＋ references/（D1、自動部署路線 B，隨技能安裝）
 │   ├── 07-comfyui/SKILL.md ＋ models/（各模型筆記，隨技能安裝）
 │   └── install-all/SKILL.md
 └── scripts/
@@ -135,12 +136,14 @@ agents-lazy-guide/
 - **#07 的模型專屬內容（版本選擇、欄位地址、提示詞要點、實測數據）寫在 `skills/07-comfyui/models/<模型>.md`**，
   `SKILL.md` 只留通用流程與〈模型筆記〉索引表。新增模型就新增一份筆記並補進索引表，不要再寫進 `SKILL.md` 本文。
   筆記隨技能安裝（`install.ps1`、`sync-skills` 都遞迴複製），可以放執行必需的內容；給人看的原因與量測方式仍放 guide。
+  這是 `TEMPLATE.md`〈附屬檔〉通則的一例（#06 的 `references/` 同理）。
 - **#06 預設是純靜態站，D1 只在使用者要求存資料時才做，不主動提議。**
   **建立與正式資料庫遷移由 agent 在使用者當下同意後執行**（不算對外發布，故不比照 `wrangler deploy`）；
   **刪除資料庫與 time-travel 還原一律由使用者自己執行**，也不得改用 MCP 的刪除工具。
   **建立資源與改資料表結構走 Wrangler，Cloudflare MCP 只用來查看**——兩者各自授權、帳號可能不同，
   且結構不走遷移檔會讓本機與正式對不起來（並非 MCP 會繞過同意點，這個說法是錯的）。
   agent 的非互動環境會讓 `d1 migrations apply --remote` 自動跳過 Wrangler 的確認，同意必須由技能本文要求 agent 先問。
+  D1 的執行細節放在 `skills/06-cloudflare/references/d1.md`，但建立與正式遷移這兩個同意點仍要在 `SKILL.md` 步驟 11 與〈安全規則〉點名。
   改動這段前先確認這個取捨還成立。
 
 ## 三個檔案的職責（依「時效性」分家，不是依「詳細程度」）
@@ -168,3 +171,8 @@ agents-lazy-guide/
   會當成 ANSI，檔內中文全部亂碼、解析階段就失敗。用編輯器另存時要確認 BOM 沒被拿掉
 - **全域技能目錄不在雲端硬碟，每台電腦都要各自跑一次安裝。** 換電腦接手時先確認
   `~/.claude/skills` 等四個目錄裝的是 `agent-*` 還是舊前綴，不要以 `handoff.md` 的記錄為準
+- **用指令測其他 agent 的技能行為時，一律在空資料夾跑，並要求回報讀到的檔案路徑**（才分得出讀的是技能副本還是 repo 原始檔）。
+  Codex 用 App 附帶的 `~/.codex/.sandbox-bin/codex.exe exec --skip-git-repo-check --ephemeral -s read-only`，
+  預設模型不被支援就加 `-m` 指定，不改使用者設定；OpenCode 的 `opencode run` 會自動拒絕權限為 ask 的技能，
+  用環境變數 `OPENCODE_CONFIG_CONTENT` 只對該次允許所需技能，**不要用 `--auto`**（會核准所有未明確禁止的權限）；
+  Antigravity 只有桌面 App，要用畫面操作

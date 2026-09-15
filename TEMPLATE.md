@@ -158,6 +158,34 @@ description: <觸發語句>。說「XXX」時載入。
 > 建立、遷移、API Worker 各有必須寫在本文的指令與同意點（技能在其他專案讀不到 `guides/`），
 > 能搬走的背景都搬了仍有 125 行。再壓只能刪同意點，那正是上一條禁止的。
 
+### 附屬檔：只在特定情況才走的內容
+
+技能資料夾裡除了 `SKILL.md`，還可以放附屬檔。**`SKILL.md` 放每次都會走的主流程；只在特定情況才走的內容放附屬檔**：
+
+| 適合放附屬檔 | 例子 |
+|---|---|
+| 選用功能，而且規則是「使用者要求才做」 | #06 的 D1 資料庫 → `references/d1.md` |
+| 使用者二選一之後才走的替代路線 | #06 自動部署路線 B → `references/github-actions.md` |
+| 會隨模型、版本不斷增加的實戰筆記 | #07 各模型 → `models/<模型>.md` |
+
+規則：
+
+- **`SKILL.md` 要有一張索引表，寫明「什麼情況讀哪個檔」**，並在走到那個分支的步驟裡再點名一次。路徑一律相對於技能資料夾。
+- **附屬檔隨技能安裝**（`install.ps1` 與 `sync-skills` 都遞迴複製整個技能資料夾），所以**可以放執行必需的指令**，
+  不違反「不可只寫見 guide」。給人看的原因、背景、踩坑故事仍放 `guides/`。
+- **安全規則與同意點不可只寫在附屬檔。** 附屬檔裡的 ⚠️、🖐️ 子步驟照寫；`SKILL.md` 的〈安全規則〉保留總則，
+  走到分支的那一步也要點出同意點——agent 可能還沒讀附屬檔就被要求動手。
+- 附屬檔**放在子資料夾、不可命名為 `SKILL.md`、不加 frontmatter**，避免被工具掃成另一個技能。
+  一般用 `references/`；內容有明確單位時可取專用名稱（如 #07 的 `models/`）。
+- 附屬檔一樣要 commit、同步技能與逐檔驗證；只改附屬檔也要同步。
+
+> **為什麼可以這樣拆**：2026-09-15 在 PC-YI-SL 實測，給一段只有 `models/minimax-h3.md` 才答得出的提問（檔案的 SHA256），
+> 在空資料夾執行，三家都從**各自的全域技能目錄**讀到正確內容：
+> Codex（App 附帶的 CLI 0.147 alpha、`gpt-5.5`，讀 `~/.agents/skills/…/models/`）、
+> OpenCode 1.18.16（技能資料夾內的檔案自動允許讀取，讀 `~/.config/opencode/skills/…/models/`）、
+> Antigravity 2.0 桌面 App（Gemini 3.8 Flash，讀 `~/.gemini/config/skills/…/models/`）。
+> Claude Code 載入技能時會附上技能資料夾路徑，未另外跑同一題。
+
 ---
 
 ## 寫作規則
@@ -229,3 +257,4 @@ Windows / macOS / Linux 用明確標題區分，或在步驟零要求 agent 判�
 - [ ] `README.md` 與 `INSTALL.md` 的清單已更新
 - [ ] `scripts/install.ps1 -Agent all -ListOnly` 看得到該主題
 - [ ] 至少在一個 agent 實際安裝過並驗證 frontmatter `name` 與資料夾名一致
+- [ ] 有附屬檔的話，`SKILL.md` 的索引表列出每個檔與讀取時機，安全規則總則仍留在 `SKILL.md`

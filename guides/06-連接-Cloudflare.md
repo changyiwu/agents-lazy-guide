@@ -2,7 +2,7 @@
 title: 'AI Agent 懶人包 #06：連接 Cloudflare'
 date: '2026-09-14'
 type: 懶人包
-version: v0.2
+version: v0.3
 status: 初版（部署流程源自實際專案遷移；D1 段落依官方文件撰寫；皆尚未以技能形式重跑）
 tags:
   - 懶人包
@@ -13,7 +13,7 @@ tags:
 
 # 懶人包 #06：連接 Cloudflare
 
-**版本** v0.2｜**更新日期** 2026-09-14｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.3｜**更新日期** 2026-09-15｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -351,6 +351,8 @@ secret store 裡，你不需要再看到它，只有「要用到第二個 repo�
 
 ### 路線 B：GitHub Actions
 
+> agent 執行時讀的是技能資料夾的 `references/github-actions.md`（隨技能安裝，含下方「從 B 換回 A」）；本節是給人看的完整版。
+
 只有第 1、2 步要你動手，其餘可以交給 agent。
 
 **1. 產一顆 API Token**（🖐️ 你自己做）
@@ -417,6 +419,8 @@ gh run watch <run-id> --exit-status
 ## 步驟十：加上 D1 資料庫與 API（選用）
 
 > **預設是純靜態站，這一步只在你需要存資料時才做**，agent 不會主動提議。
+>
+> agent 執行時讀的是技能資料夾的 `references/d1.md`（隨技能安裝）；本節是給人看的完整版。
 
 靜態網站只能「發檔案」，沒辦法存資料。要讓網頁能留言、報名、記分，就需要資料庫。
 **D1** 是 Cloudflare 的 SQL 資料庫（底層是 SQLite），免費方案就能用。
@@ -715,6 +719,7 @@ D1 免費方案的額度：
 |------|------|------|
 | v0.1 | 2026-08-18 | 初版。流程與所有踩坑紀錄來自一次實際的網站遷移（Netlify → Cloudflare Workers，含首次部署與接上 Workers Builds），尚未以技能形式重跑驗證 |
 | v0.2 | 2026-09-14 | 新增步驟十「加上 D1 資料庫與 API」：建立資料庫、遷移檔、`run_worker_first` 分流的 API Worker、本機與正式環境的套用順序。確立同意點：建立與正式遷移由 agent 在當下同意後執行（Wrangler 在非互動環境會自動跳過自己的確認），刪除與還原由使用者執行；建立資源與改結構走 Wrangler、MCP 只用來查看（兩者授權帳號可能不同）；D1 不主動提議。補免費額度、復原與常見問題。依官方文件撰寫，尚未實測 |
+| v0.3 | 2026-09-15 | 教學內容不變，**技能結構調整**：只在特定情況才走的內容從 `SKILL.md` 移到技能資料夾的附屬檔——D1（步驟十）→ `references/d1.md`，自動部署路線 B 與「從 B 換回 A」→ `references/github-actions.md`，隨技能安裝。`SKILL.md` 由 129 行降為 106 行，保留路線取捨表、路線 A、D1 兩個同意點與全部安全規則，並加上附屬檔索引表。依據是同日在 PC-YI-SL 實測 Codex、OpenCode、Antigravity 都讀得到技能資料夾裡的附屬檔（通則寫入 `TEMPLATE.md`〈附屬檔〉） |
 
 ---
 

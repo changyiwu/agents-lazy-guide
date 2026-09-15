@@ -5,7 +5,8 @@ description: 連接 Cloudflare，讓 agent 能用 Wrangler 建置並部署靜態
 
 # 連接 Cloudflare
 
-完整教學見 `guides/06-連接-Cloudflare.md`。以下是執行流程。
+完整教學見 `guides/06-連接-Cloudflare.md`。以下是執行流程；只在特定情況才走的內容放在本技能資料夾的
+`references/`，走到該步驟時先讀（見〈附屬檔〉）。
 
 ## 觀念
 
@@ -58,49 +59,28 @@ MCP 讓 agent 在對話中查帳號、文件與資源清單，沒有部署工具
     🖐️ 使用者在後台 → 該 Worker → Settings → Build → Connect 連結 Git repo，
     build 指令填建置指令、deploy 指令用預設值、production branch 選主要分支。
 
-    **路線 B：GitHub Actions**
-    1. 🖐️ 使用者在後台 → 頭像 → Profile → API Tokens → Create Token →
-       **"Edit Cloudflare Workers"** 模板 → 建立。Account Resources 選自己的帳號即可；
-       模板附帶的 Zone Resources 是給自訂網域路由用的，走 `*.workers.dev` 用不到、
-       留著也無妨。**若設了到期日，到期那天自動部署會無聲失效**，要先提醒。
-    2. 🖐️ **使用者自己**執行 `gh secret set CLOUDFLARE_API_TOKEN --repo <owner>/<repo>`
-       並在提示時貼上。**agent 不得代跑、不得要求把 token 貼進對話**。
-    3. agent 建立 `.github/workflows/deploy-cloudflare.yml`：`on.push` 加 `paths`
-       過濾（只有前端目錄、`wrangler.jsonc` 或該檔本身變動才跑），部署前先跑專案測試，
-       `permissions` 只給 `contents: read`，最後用 `cloudflare/wrangler-action@v3`。
-    4. **`wranglerVersion` 一定要指定 `"4"`**：action 預設裝 wrangler 3，而「沒有
-       `main`、只有 `assets`」的純靜態 Worker 是 wrangler 4 才支援的寫法，用 3 會直接報
-       `Missing entry-point`。本機通常已是 4.x，所以這個坑只在 CI 現形。
-    5. 推上去後用 `gh run watch <id> --exit-status` 確認，失敗就 `gh run view --log-failed`。
-
-    **從 B 換回 A**（順序反了會有一段空窗期，Cloudflare 站更新不了）：
-    先接好 A → 確認自動部署成功一次 → 刪掉 workflow 檔 → 最後才刪 token 與 secret。
+    **路線 B：GitHub Actions**——選了才讀 `references/github-actions.md`，照它的步驟做。
+    🖐️ API Token 由使用者自己在後台建立，`gh secret set CLOUDFLARE_API_TOKEN` 也由**使用者自己**執行並貼上；
+    agent 不得代跑、不得要求把 token 貼進對話。**從 B 換回 A** 的順序也在同一份檔。
 11. **（選用）加上 D1 資料庫與 API**：預設是純靜態站，**只在使用者要求存資料時才做，不主動提議**。
-    標 ⚠️ 的子步驟每次都要**當下**取得同意。
-    1. ⚠️ **建立資料庫**：先向使用者確認資料庫名稱（小寫英數與連字號）、地區（台灣用 `apac`；
-       **建立後不能改**，且只是偏好不保證）、binding 名稱（預設 `DB`），同意後才執行
-       `npx wrangler d1 create <名稱> --location apac --binding DB --update-config`。
-       確認 `wrangler.jsonc` 多了含 `database_id` 的 `d1_databases`；沒寫入就把輸出的片段手動貼上。
-       名稱重複或免費方案已滿 10 個資料庫會失敗：回報後停下，**不要自行刪除舊資料庫**。
-    2. **寫遷移檔**：`npx wrangler d1 migrations create <名稱> <說明>`，在產生的 `migrations/*.sql`
-       寫 `CREATE TABLE`。**已套用過的遷移檔不要改**，要改結構就新增一份。
-    3. **套用到本機**：`npx wrangler d1 migrations apply <名稱> --local`。
-    4. **API Worker**：`wrangler.jsonc` 加 `"main": "./worker/index.js"`，`assets` 加
-       `"run_worker_first": ["/api/*"]`（Wrangler ≥ 4.20）。`worker/index.js` 用
-       `export default { async fetch(request, env) {…} }` 處理 `/api/*`，未匹配回 404 JSON。
-       查詢**一律** `env.DB.prepare("… WHERE id = ?").bind(值)`，不可把使用者輸入拼進 SQL 字串。
-    5. **本機驗證**：`npx wrangler dev`，打 `/api/…` 確認讀寫成功，且非 `/api` 路徑仍正常發檔案。
-    6. ⚠️ **套用到正式資料庫**：agent 的執行環境不是互動式終端，Wrangler 會**自動跳過自己的確認**，
-       所以先列出待套用的遷移檔、取得同意，再跑 `npx wrangler d1 migrations apply <名稱> --remote`。
-       **必須早於**部署會用到新資料表的程式碼。
-    7. **部署**：API 上線後**任何人都能呼叫**，寫入類端點沒有驗證機制時要先提醒。部署照步驟 9 或 10。
-       路線 B 的 token 模板**不含 D1 權限**：CI 報 D1 權限錯誤時，請使用者在 token 加 Account → D1 → Edit。
+    要做時先讀 `references/d1.md`，照它的子步驟做。其中 ⚠️ **建立資料庫**（`d1 create`）與
+    ⚠️ **套用到正式資料庫**（`d1 migrations apply --remote`）每次都要**當下**取得同意——
+    agent 的執行環境不是互動式終端，Wrangler 會自動跳過自己的確認，所以要由 agent 先問。
+
+## 附屬檔
+
+| 檔案 | 什麼時候讀 |
+|---|---|
+| `references/github-actions.md` | 使用者在步驟 10 選了路線 B，或要從 B 換回 A |
+| `references/d1.md` | 使用者要求存資料（步驟 11），或 D1 出錯要還原、不要資料庫了 |
+
+路徑相對於本技能資料夾。
 
 ## 安全規則
 
 - **部署是對外發布，每次都要取得明確同意**；agent 不得自行執行 `wrangler deploy`。
 - 不自動建立自訂網域、不改 DNS、不建立或刪除任何 Worker、KV、R2。
-- **D1 只做步驟 11 列出的動作**：`d1 create`、`migrations apply --remote`、任何 `d1 execute --remote`
+- **D1 只做 `references/d1.md` 列出的動作**：`d1 create`、`migrations apply --remote`、任何 `d1 execute --remote`
   （含 MCP 的 `d1_database_query`）每次都要當下同意。MCP 只用來列出、查看資源。
 - **刪除資料庫與還原一律 🖐️ 由使用者自己執行**（`d1 delete`、`d1 time-travel restore` 或後台），
   agent 不得代跑，也不得改用 MCP 的刪除工具。
@@ -117,10 +97,7 @@ MCP 讓 agent 在對話中查帳號、文件與資源清單，沒有部署工具
 `npx wrangler logout` 解除本機授權。已部署的 Worker 要下線，須由使用者自己在 Cloudflare 後台
 刪除（不可逆，agent 不得代為執行）。移除本流程新增的檔案即可回到未接 Cloudflare 的狀態。
 
-D1 出錯時 🖐️ 使用者執行 `npx wrangler d1 time-travel restore <名稱> --timestamp=<Unix 時間>`，
-可還原到 7 天內（付費方案 30 天）任一時間點，會覆蓋現有資料，但會給一個 bookmark 可再還原回來。
-不要資料庫了：🖐️ 使用者先 `npx wrangler d1 export <名稱> --remote --output <備份.sql>`，
-再 `npx wrangler d1 delete <名稱>`（不可逆），最後從 `wrangler.jsonc` 移除該 binding。
+D1 的還原（time-travel）與刪除一律 🖐️ 由使用者自己執行，指令與後果見 `references/d1.md`。
 
 ## 回報
 
