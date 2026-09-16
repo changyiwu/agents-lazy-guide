@@ -7,3 +7,6 @@ credentials.*
 
 # 交接檔含真實電腦名與本機路徑，只走雲端硬碟同步，不進公開 repo
 handoff.md
+
+# 實驗用的工作流程 JSON（含本機路徑與實測參數），不進 repo
+comfyui/
