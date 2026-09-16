@@ -170,14 +170,17 @@ Google Drive/
 
 常見位置：
 
-| 同步方式 | 常見路徑 |
-|---|---|
-| Google Drive | `G:\我的雲端硬碟\<vault>` |
-| OneDrive | `C:\Users\<你>\OneDrive\文件\<vault>` |
-| 本機文件 | `C:\Users\<你>\Documents\<vault>` |
-| Obsidian Sync | 使用者自選的本機資料夾 |
+| 同步方式 | Windows 常見路徑 | macOS 常見路徑 |
+|---|---|---|
+| Google Drive | `G:\我的雲端硬碟\<vault>` | `~/Library/CloudStorage/GoogleDrive-<你的信箱>/My Drive/<vault>` |
+| OneDrive | `C:\Users\<你>\OneDrive\文件\<vault>` | `~/Library/CloudStorage/OneDrive-Personal/文件/<vault>` |
+| 本機文件 | `C:\Users\<你>\Documents\<vault>` | `~/Documents/<vault>` |
+| Obsidian Sync | 使用者自選的本機資料夾 | 使用者自選的本機資料夾 |
+| iCloud Drive | （不適用） | `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/<vault>` |
 
 使用者不知道時，**在限定範圍內**搜尋含 `.obsidian` 的資料夾：
+
+**Windows（PowerShell）**
 
 ```powershell
 $roots = @(
@@ -196,6 +199,19 @@ $roots |
       Select-Object -ExpandProperty FullName
   }
 ```
+
+**macOS / Linux**
+
+```bash
+for root in ~/Library/CloudStorage ~/Library/"Mobile Documents" ~/Documents ~/Desktop ~/OneDrive; do
+  [ -d "$root" ] || continue
+  find "$root" -maxdepth 5 -type d -name .obsidian 2>/dev/null |
+    while read -r d; do dirname "$d"; done
+done
+```
+
+> macOS 的 Google Drive 不是磁碟機代號，而是掛在 `~/Library/CloudStorage/` 底下；
+> iCloud 的 vault 則在 `~/Library/Mobile Documents/`，這兩處都要搜才找得齊。
 
 **確認條件**：資料夾存在 → 內含 `.obsidian` → **使用者確認這是他日常真正使用的主要 vault**。
 
@@ -313,6 +329,8 @@ npm.cmd --version
 **位置 1：使用者層（所有專案都生效）** —— `~/.claude.json` 的**最上層**
 （這個檔案通常已存在且內容很多，**保留原有內容，只新增這段**）：
 
+**Windows**：
+
 ```json
 {
   "mcpServers": {
@@ -324,7 +342,7 @@ npm.cmd --version
 }
 ```
 
-macOS / Linux 通常不需要完整路徑，直接用 `mcpvault`：
+**macOS / Linux**（不必寫完整路徑，直接用 `mcpvault`）
 
 ```json
 {
@@ -336,6 +354,8 @@ macOS / Linux 通常不需要完整路徑，直接用 `mcpvault`：
   }
 }
 ```
+
+> 用 `which mcpvault` 確認實際路徑。**路徑不要用 `~`**——MCP 設定不會展開波浪號，要寫成 `/Users/…` 的絕對路徑。
 
 **位置 2：專案層（只在該工作目錄生效）** —— 新建 `[工作目錄]/.mcp.json`，格式相同。
 
@@ -382,9 +402,21 @@ Codex Desktop、CLI 與 IDE 擴充**共用 `~/.codex/config.toml`**（受信任�
 **再加入 MCP 設定**（三選一）：GUI 的 **MCP servers → Add server**（選 STDIO）、
 手動編輯 `~/.codex/config.toml`、或 `codex mcp add`。
 
+**Windows**：
+
 ```toml
 [mcp_servers.obsidian]
 command = "C:\\Users\\<你>\\AppData\\Roaming\\npm\\mcpvault.cmd"
+args = ["<VAULT_PATH>"]
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+```
+
+**macOS / Linux**
+
+```toml
+[mcp_servers.obsidian]
+command = "mcpvault"
 args = ["<VAULT_PATH>"]
 startup_timeout_sec = 20
 tool_timeout_sec = 60
@@ -395,8 +427,16 @@ tool_timeout_sec = 60
 
 CLI 形式：
 
+**Windows（PowerShell）**
+
 ```powershell
 codex mcp add obsidian -- "C:\Users\<你>\AppData\Roaming\npm\mcpvault.cmd" "<VAULT_PATH>"
+```
+
+**macOS / Linux**
+
+```bash
+codex mcp add obsidian -- mcpvault "<VAULT_PATH>"
 ```
 
 **重啟**：Desktop 在 MCP 設定中 Restart 或完全關閉重開；IDE 用 Restart extension / Reload Window；
@@ -428,11 +468,13 @@ CLI 結束 session 再啟動。先用 `codex mcp list` 檢查。
 
 依「合併流程」編輯 `~/.gemini/config/mcp_config.json`：
 
-1. 檔案已存在時，先用 `Get-Content -Raw | ConvertFrom-Json` 確認 JSON 合法
+1. 檔案已存在時先確認 JSON 合法：Windows 用 `Get-Content -Raw | ConvertFrom-Json`，macOS / Linux 用 `python3 -m json.tool < 檔案`
 2. 寫入前建立**帶時間戳的備份**
 3. **只新增或更新 `.mcpServers.obsidian`**，保留其他 server
 4. 同名 server 已存在時先顯示差異並取得同意
 5. 寫入後**再次解析驗證**
+
+**Windows**：
 
 ```json
 {
@@ -440,6 +482,19 @@ CLI 結束 session 再啟動。先用 `codex mcp list` 檢查。
     "obsidian": {
       "command": "C:\\Users\\<使用者>\\AppData\\Roaming\\npm\\mcpvault.cmd",
       "args": ["C:\\Users\\<使用者>\\Documents\\<vault>"]
+    }
+  }
+}
+```
+
+**macOS / Linux**
+
+```json
+{
+  "mcpServers": {
+    "obsidian": {
+      "command": "mcpvault",
+      "args": ["/Users/<使用者>/Documents/<vault>"]
     }
   }
 }
