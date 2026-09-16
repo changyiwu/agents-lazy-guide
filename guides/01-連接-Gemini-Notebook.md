@@ -317,6 +317,8 @@ nlm setup add claude-code
 
 改為手動寫入 **`~/.claude.json`** 的最上層（保留檔案原有內容，只新增這段）：
 
+**Windows**：
+
 ```json
 {
   "mcpServers": {

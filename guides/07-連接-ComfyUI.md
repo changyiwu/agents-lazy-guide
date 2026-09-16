@@ -113,6 +113,7 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
 `COMFY_LOCAL_URL=http://127.0.0.1:<埠>`，之後所有 `comfy` 指令都會連到那裡。
 
 **方式二：不開 Desktop 視窗，由 agent 在背景以 API 模式啟動**（Windows 的 Desktop 安裝實測可用）。
+下面的 macOS / Linux 寫法是照指令與路徑慣例對應過來的，**尚未在 mac 實機驗證**。
 適合只要 agent 生圖、不需要看 ComfyUI 畫面的時候。後面的步驟完全相同，因為 comfy-cli 都走 HTTP 連線。
 
 1. **讀路徑，不要照抄**——每台電腦的實例 id 都不同：
@@ -123,10 +124,16 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
    | 模型路徑設定檔 | `%APPDATA%\Comfy Desktop\instance-model-paths\<實例 id>.yaml` |
    | 輸入、輸出資料夾 | `%APPDATA%\Comfy Desktop\settings.json` 的 `inputDir`、`outputDir` |
 
+   macOS / Linux 沒有 `%APPDATA%`，上表三個路徑的前綴改成
+   `~/Library/Application Support/Comfy Desktop/`（依 Electron 慣例推得，**未在 mac 實測**）。
+
 2. **Python 一定要用 `<installPath>\ComfyUI\.venv\Scripts\python.exe`**。
+   macOS / Linux 的 venv 直譯器在 `<installPath>/ComfyUI/.venv/bin/python`（不是 `Scripts/`）。
    同層的 `<installPath>\standalone-env\python.exe` 看起來也像，但**沒有 torch**，一跑就 `ModuleNotFoundError`。
 3. **確認 Desktop 沒有開著**，否則兩個行程會搶同一個埠。
 4. **用 `Start-Process` 放背景啟動**，工作目錄設在 `<installPath>\ComfyUI`：
+
+   **Windows（PowerShell）**
 
    ```powershell
    $p = Start-Process -FilePath "<installPath>\ComfyUI\.venv\Scripts\python.exe" `
@@ -134,6 +141,16 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
      -ArgumentList "main.py --listen 127.0.0.1 --port 8188 --disable-auto-launch --extra-model-paths-config `"<模型路徑設定檔>`" --output-directory `"<outputDir>`" --input-directory `"<inputDir>`""
    $p.Id   # 記下來，停止時用
    ```
+
+   **macOS / Linux**（用 `nohup` 放背景，`$!` 取 PID）
+
+   ```bash
+   cd "<installPath>/ComfyUI"
+   nohup .venv/bin/python main.py --listen 127.0.0.1 --port 8188 --disable-auto-launch --extra-model-paths-config "<模型路徑設定檔>" --output-directory "<outputDir>" --input-directory "<inputDir>" >/tmp/comfyui.log 2>&1 &
+   echo $!   # 記下來，停止時用
+   ```
+
+   - bash 會自己處理含空白的路徑，只要用雙引號包起來就好，不必像 PowerShell 那樣再包一層。
 
    - **不要用 `& python.exe main.py …`**：那是前景執行，會一直佔住 agent 的指令直到逾時，也拿不到 PID。
    - **含空白的路徑要用 `` `" `` 包起來**：模型路徑設定檔在 `Comfy Desktop` 資料夾裡，路徑有空白；
@@ -144,9 +161,18 @@ Comfy 官方同時提供 CLI 與 MCP，**本懶人包只用 CLI**。
    - 載入需要一點時間，輪詢 `system_stats` 到有回應再繼續（16GB 桌機實測 5.6–8.1 秒；另一台 16GB 桌機某次要 71 秒，要給足時間）。
 5. **用完停掉自己啟動的那個行程**。不要停 Desktop 開的 ComfyUI，也不要用 `comfy stop`：
 
+   **Windows（PowerShell）**
+
    ```powershell
    Stop-Process -Id <記下的 PID>
    Get-NetTCPConnection -LocalPort 8188 -State Listen -ErrorAction SilentlyContinue   # 應該沒有結果
+   ```
+
+   **macOS / Linux**
+
+   ```bash
+   kill <記下的 PID>
+   lsof -nP -iTCP:8188 -sTCP:LISTEN   # 應該沒有結果
    ```
 
    `.venv\Scripts\python.exe` 其實是 uv 建立的**啟動器**（約 240 KB），它會帶起 `standalone-env\python.exe` 當子行程，

@@ -26,9 +26,19 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
      同資料夾 `settings.json` 的 `inputDir`、`outputDir`；模型路徑設定檔是 `instance-model-paths\<id>.yaml`。
      Python **一定要用 `ComfyUI\.venv\Scripts\python.exe`**（直接跑 `standalone-env\python.exe` 沒有 torch）。Desktop 開著時不要啟動。
 
+     **Windows（PowerShell）**
+
      ```powershell
      $p = Start-Process "<installPath>\ComfyUI\.venv\Scripts\python.exe" -WorkingDirectory "<installPath>\ComfyUI" -WindowStyle Hidden -PassThru -ArgumentList "main.py --listen 127.0.0.1 --port 8188 --disable-auto-launch --extra-model-paths-config `"<yaml>`" --output-directory `"<outputDir>`" --input-directory `"<inputDir>`""
      ```
+
+     **macOS / Linux**
+
+     ```bash
+     cd "<installPath>/ComfyUI" && nohup .venv/bin/python main.py --listen 127.0.0.1 --port 8188 --disable-auto-launch --extra-model-paths-config "<yaml>" --output-directory "<outputDir>" --input-directory "<inputDir>" >/tmp/comfyui.log 2>&1 & echo $!
+     ```
+
+     venv 直譯器在 `.venv/bin/python`；`%APPDATA%` 對應 `~/Library/Application Support/Comfy Desktop/`（**未在 mac 實測**）。
 
      **必須用 `Start-Process`**（`&` 會佔住指令到逾時、拿不到 PID）；含空白的路徑要用 `` `" `` 包住。
      輪詢 `system_stats` 有回應再繼續（實測 6 秒到 71 秒不等，要給足時間）。
@@ -117,7 +127,7 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 
 `uv tool uninstall comfy-cli` 移除工具；Windows 上的設定與工作狀態檔在 `%LOCALAPPDATA%\comfy-cli\`，
 使用者同意後才刪。下載的模型、ComfyUI output 資料夾裡的產出，都由使用者確認後再刪。
-agent 在背景啟動的 ComfyUI：`Stop-Process -Id $p.Id`，再確認 `Get-NetTCPConnection -LocalPort 8188 -State Listen` 已無結果。
+agent 在背景啟動的 ComfyUI：Windows `Stop-Process -Id $p.Id`，再確認 `Get-NetTCPConnection -LocalPort 8188 -State Listen` 已無結果；macOS / Linux `kill <PID>`，再確認 `lsof -nP -iTCP:8188 -sTCP:LISTEN` 已無結果。
 `$p.Id` 是 `.venv` 的啟動器，監聽的是它帶起的子行程，實測停啟動器會一起結束；仍在監聽時，
 先確認 `OwningProcess` 的 `ParentProcessId` 是 `$p.Id` 才停，不是就不要動（可能是 Desktop 的）。
 

@@ -302,6 +302,8 @@ claude mcp add firebase --scope user -- npx -y firebase-tools@latest mcp
 > （保留原有內容，只新增這段）。**不要寫進 `settings.json`** ——
 > 現行 schema 不接受 `mcpServers`，會回 `Unrecognized field: mcpServers`：
 
+**Windows**：
+
 ```json
 {
   "mcpServers": {
@@ -333,10 +335,24 @@ macOS / Linux 的 command 用 `firebase`，路徑可用 `which firebase` 查。
 
 **方法 B：手動編輯 `~/.codex/config.toml`**
 
+**Windows**：
+
 ```toml
 [mcp_servers.firebase]
 command = "npx.cmd"
 cwd = 'C:\Users\<你>\.codex\firebase-projects\<專案 ID>'
+args = ["-y", "firebase-tools@latest", "mcp"]
+startup_timeout_sec = 60
+tool_timeout_sec = 120
+default_tools_approval_mode = "writes"
+```
+
+**macOS / Linux**
+
+```toml
+[mcp_servers.firebase]
+command = "npx"
+cwd = '/Users/<你>/.codex/firebase-projects/<專案 ID>'
 args = ["-y", "firebase-tools@latest", "mcp"]
 startup_timeout_sec = 60
 tool_timeout_sec = 120
