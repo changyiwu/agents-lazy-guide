@@ -2,7 +2,7 @@
 title: 'AI Agent 懶人包 #07：連接 ComfyUI'
 date: '2026-09-16'
 type: 懶人包
-version: v0.12
+version: v0.13
 status: 初版（生圖、MiniMax H3 影片、Music 3 音樂已實測）
 tags:
   - 懶人包
@@ -15,7 +15,7 @@ tags:
 
 # 懶人包 #07：連接 ComfyUI
 
-**版本** v0.12｜**更新日期** 2026-09-16｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.13｜**更新日期** 2026-09-16｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
