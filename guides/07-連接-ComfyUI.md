@@ -1,8 +1,8 @@
 ---
 title: 'AI Agent 懶人包 #07：連接 ComfyUI'
-date: '2026-09-15'
+date: '2026-09-16'
 type: 懶人包
-version: v0.11
+version: v0.12
 status: 初版（生圖、MiniMax H3 影片、Music 3 音樂已實測）
 tags:
   - 懶人包
@@ -15,7 +15,7 @@ tags:
 
 # 懶人包 #07：連接 ComfyUI
 
-**版本** v0.11｜**更新日期** 2026-09-15｜**適用** Claude Code / Codex / OpenCode / Antigravity
+**版本** v0.12｜**更新日期** 2026-09-16｜**適用** Claude Code / Codex / OpenCode / Antigravity
 
 ---
 
@@ -505,6 +505,35 @@ comfy --json download <prompt_id> -o generated
 
 同日招牌實測（完整版、1536×864 橫式，見步驟六〈畫面中的中文字〉）：首張含載入模型 36.8 秒，之後 47 張每張 14.4–16.1 秒（平均約 14.9 秒，
 取自 `/history` 的 `execution_start` 到 `execution_success`）。一次排 44 張，從送出到佇列清空約 11 分鐘。
+
+### 產出物內嵌完整工作流程（要發布時才需要在意）
+
+ComfyUI 的產出**把整份工作流程寫進檔案本身**，不是只寫在旁邊的 log 裡。2026-09-16 實測本機的兩個檔案：
+
+| 檔案 | 位置 | 內容 |
+|---|---|---|
+| PNG | `tEXt` 區塊，鍵名 `prompt`（2812 位元組、10 個節點） | 正向提示詞全文、模型檔名、seed、步數、cfg、尺寸 |
+| MP4 | 容器 metadata，同樣叫 `prompt`（26 個節點） | 提示詞全文、主模型檔名、noise_seed、首幀圖檔名、LoRA 開關狀態 |
+
+看 MP4 的方式：
+
+```bash
+ffprobe -v error -show_entries format_tags -of json <檔案>
+```
+
+**這件事多數時候是好處。** 步驟四〈來源 B〉能從一張舊圖撈回工作流程，靠的就是它；
+測完一輪忘了記參數，把檔案拖回 ComfyUI 畫布就全部回來了。實測連「加速 LoRA 到底有沒有生效」都查得出來——
+H3 範本裡的 LoRA 是用一顆 `PrimitiveBoolean` 切換的，讀 metadata 看到它是 `false`，就確定那支影片走的是不含 LoRA 的分支。
+
+**要注意的只有一種情況：把產出物發到社群或傳給別人。** 提示詞全文、你用哪個模型、seed 都會跟著檔案走。
+不想公開就在發布前清掉，**另存新檔、保留原檔**（清完就再也還原不了工作流程了）：
+
+```bash
+ffmpeg -i "輸入.mp4" -map_metadata -1 -c copy "輸出.mp4"
+```
+
+`-c copy` 是直接複製串流、不重新編碼，所以畫質不會掉，幾秒就好。圖片則用 Pillow 重存一份不帶 `info` 的 PNG，
+或直接轉成 JPG（JPG 沒有 `tEXt`，但要注意它是失真壓縮）。
 
 ---
 

@@ -99,6 +99,11 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 10. **呈現結果**：圖片直接開給使用者看，並回報完整路徑。影片、音樂在輸出資料夾的子資料夾（依 `filename_prefix`，例如 `video\`、`audio\`）。
     影片用 ComfyUI `.venv` 的 python 以 PyAV 抽幀：`c = av.open(p)`、`[f.to_image() for f in c.decode(video=0)]`，
     取首、1/3、2/3、末幀用 Pillow 拼成一張再看。**agent 聽不到聲音**（影片音軌與音樂），請使用者自己聽。
+11. **產出物內嵌完整工作流程**：PNG 在 `tEXt` 的 `prompt`、MP4 在容器 metadata 的 `prompt`
+    （`ffprobe -v error -show_entries format_tags -of json <檔>`），含提示詞全文、模型檔名與 seed。
+    好處是拖回 ComfyUI 就能還原（步驟 5 靠的就是它），**但對外發布等於連提示詞一起送出**。
+    使用者說要發布（社群、給別人）時**主動提醒一次**，同意後才清，且**另存新檔、不要覆蓋原檔**：
+    影片 `ffmpeg -i <輸入> -map_metadata -1 -c copy <輸出>`；圖片用 Pillow 重存一份不帶 `info` 的 PNG 或轉 JPG。
 
 ## 模型筆記
 

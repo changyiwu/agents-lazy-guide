@@ -26,6 +26,7 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 - 2026-09-15：#07 實測 MiniMax H3 影片與 Music 3 音樂；技能加入附屬檔結構（#07 `models/`、#06 `references/`），實測 Codex、OpenCode、Antigravity 都讀得到，通則寫入 `TEMPLATE.md`〈附屬檔〉
 - 2026-09-15：#07 H3 在 16GB RTX 50 系列的預設由 NVFP4＋8 步 LoRA 改為 NVFP4 20 步；步驟九加入官方撰寫指南的台詞格式（guide v0.9）
 - 2026-09-15：#07 實測 Z-Image 在圖中寫繁體中文（48 張招牌），結論是限制在字形不在字數，寫入 `models/z-image-turbo.md`〈畫面中的中文字〉（guide v0.10）；海報實測確認猜不到哪些繁體字會錯，海報與資訊圖表改用無字底圖＋疊字（v0.11）
+- 2026-09-16：#07 補上「產出物內嵌完整工作流程」——PNG 的 `tEXt`、MP4 的容器 metadata 都帶提示詞全文與模型 seed，發布前要提醒使用者清除（guide v0.12）
 
 ## 目標與路線圖
 
@@ -178,3 +179,8 @@ agents-lazy-guide/
   預設模型不被支援就加 `-m` 指定，不改使用者設定；OpenCode 的 `opencode run` 會自動拒絕權限為 ask 的技能，
   用環境變數 `OPENCODE_CONFIG_CONTENT` 只對該次允許所需技能，**不要用 `--auto`**（會核准所有未明確禁止的權限）；
   Antigravity 只有桌面 App，要用畫面操作
+- **判斷 OpenCode 有沒有載到技能，看 `opencode run --format json` 的 tool 事件，不要以模型的回覆為準**——
+  預設模型可能是本機小模型，實測會照叫 Skill 工具但回覆完全偏題。`opencode debug skill` 列出掃到的技能與來源路徑
+  （同名多路只留一份），`opencode debug agent build` 看實際生效的權限（沒有 `permission` 區塊時走內建的 `"*": allow`）
+- **repo 在雲端硬碟，`.git` 本身也跨機同步**：`.git/FETCH_HEAD` 的時間戳可能是別台留下的，
+  開工時不可依它跳過 `git fetch`，一律實跑
