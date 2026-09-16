@@ -554,9 +554,24 @@ MiniMax H3 一次生成畫面和立體聲音軌（對白、音效、配樂），
 | 主模型 | 用途 | 範本 |
 |---|---|---|
 | FL2VA | 文字轉影片（不接圖）、首幀／首尾幀轉影片 | `video_minimax_h3_i2v`、`video_minimax_h3_t2v` |
-| Ref2VA | 多張參考圖、參考影片、參考聲音 | `video_minimax_h3_r2v`、`video_minimax_h3_multiframe_reference` |
+| Ref2VA | 多張參考圖、參考影片、參考聲音 | `video_minimax_h3_r2v`（`video_minimax_h3_multiframe_reference` 在 0.36.0 的清單已不在）|
 
 以下實測都是 FL2VA 的 `video_minimax_h3_i2v`。
+
+範本名稱會隨 ComfyUI 版本變動（0.36.0 列的是 `video_minimax_h3_t2v`、`_i2v`、`_i2v_continuation`、`_r2v`），
+用 `comfy templates list` 核對再用。
+
+> **Ref2VA 常被誤會成「影片轉影片」。** 它吃得下參考影片（最多 3 段、各 2–15 秒，可各帶音軌），
+> 也能同時給參考圖，用提示詞裡的 `<Video 1>`、`<Picture 1>` 標籤指定誰負責動作、誰負責人物——
+> 但**目標影片仍是從空 latent 重新生成的**，參考只進 conditioning，而且文字編碼器只看到 2fps 的抽幀。
+> 結果是動作、運鏡、場景神似，**不會逐幀對齊，背景也是重畫的**。
+> 想要「原片動作與背景原封不動、只換掉人物」，H3 這條路做不到，要走逐幀控制的工作流（換臉、控制影片類）。
+> Ref2VA 的主模型是另一份 19.53 GB 的 `minimax_h3_ref2va_pruned_int8_convrot`（16GB 顯卡放不下），
+> 加速 LoRA 也是各自的 4 步 ref2v 版；參考 token 每一步都要重算，速度不能照 i2v 的實測數字推。
+> **只給一張人物照、不給參考影片**，就能把那個人放進提示詞描述的全新場景與動作——這條已實測（夜間屋頂、後仰躲子彈，
+> 半身照一張就保住五官與眼鏡）。⚠️ 但 **4 步 turbo LoRA 會把整支毀掉**：同 seed 同提示詞下整片紅色橫條紋，
+> 而且照抄參考照片的房間背景與衣服，提示詞的場景完全不出現；20 步原始模型一次就正確，每步時間兩者幾乎一樣。
+> 欄位、提示詞寫法與實測數據見 `skills/07-comfyui/models/minimax-h3.md`〈Ref2VA〉。**接參考影片的路線仍未實測。**
 
 #### 1. 依顯卡選主模型
 
