@@ -80,6 +80,9 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
    `data.prompt` 存成 `<檔>.api.json`，再 `comfy --json workflow validate --workflow <檔>.api.json`
    （只吃 API 格式，而且一定要帶 `--workflow`）。`valid` 不是 true 就停下回報。
    **不可盲目套用 `suggestions`**：缺 VAE 時它會建議換成 `pixel_space`，那不是修正，是換成別的東西。
+   Windows 上 `--json` 輸出是 cp950（路徑含中文時），解析要用 cp950 解碼。**`--print-prompt` 輸出空字串、exit 0**
+   代表 comfy-cli 讀不了這個範本（0.36.0 的 `video_minimax_h3_i2v` 就是），或要加範本沒有的節點時：改寫 API 格式 JSON，
+   `validate` 通過後 `POST http://127.0.0.1:<埠>/prompt`（body `{"prompt": <API JSON>}`），用 `/history/<prompt_id>` 追結果。
 9. **送出與取回**：
 
    ```
@@ -110,7 +113,8 @@ description: 用官方 comfy-cli 操作本機 ComfyUI：套用範本或使用者
 | 檔案 | 範本 | 內容 |
 |---|---|---|
 | `models/z-image-turbo.md` | `image_z_image_turbo`、`image_z_image_turbo_int8` | 依 VRAM 選範本、欄位地址、參考速度、提示詞要點 |
-| `models/minimax-h3.md` | `video_minimax_h3_i2v` 等 | 依顯卡選主模型與步數（含 NVFP4 下載資訊）、清快取、欄位地址、加速 LoRA 開關、台詞提示詞格式、實測數據、Ref2VA（參考影片換人物）|
+| `models/minimax-h3.md` | `video_minimax_h3_i2v`、`_r2v` 等 | 依顯卡選主模型與步數（含 NVFP4 下載資訊）、清快取、欄位地址、加速 LoRA 開關、台詞提示詞格式、實測數據、Ref2VA（多參考圖、參考聲音）、多段影片的一致性與剪接、FL2VA 首尾幀 |
+| `models/qwen-image-edit.md` | `image_qwen_image_edit_2511_int8` | 照指令改圖：真人照換裝成定妝照、畫格去人做場景版（給 H3 當參考圖）、欄位、速度 |
 | `models/minimax-music3.md` | `audio_minimax_music_3` | 檔案、欄位地址、風格描述要點（更高、更有力）、實測數據 |
 
 實測出新模型的設定或數據時，新增一份 `models/<模型>.md` 並補進這張表，不要寫進本檔。

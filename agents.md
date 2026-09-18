@@ -28,6 +28,7 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 - 2026-09-15：#07 實測 Z-Image 在圖中寫繁體中文（48 張招牌），結論是限制在字形不在字數，寫入 `models/z-image-turbo.md`〈畫面中的中文字〉（guide v0.10）；海報實測確認猜不到哪些繁體字會錯，海報與資訊圖表改用無字底圖＋疊字（v0.11）
 - 2026-09-16：#07 補上「產出物內嵌完整工作流程」——PNG 的 `tEXt`、MP4 的容器 metadata 都帶提示詞全文與模型 seed，發布前要提醒使用者清除（guide v0.12）
 - 2026-09-16：#07 實測 MiniMax H3 **Ref2VA**（PC-YI-FY 下載全套 ref2va 五檔約 44 GB）——一張人物照＋文字就能把人放進全新場景；4 步 turbo LoRA 會崩、深度與機位由 seed 決定、特效要寫起點路徑終點，寫入 `models/minimax-h3.md`（guide v0.13）
+- 2026-09-18：#07 實測 H3 **多段短片**（四段約 23 秒）——定妝照、去人的場景版、參考聲音統一各段；大特寫會禿、雙人對話推近擋不住、視線約 4 秒衰減、段落接點要換機位；FL2VA 首尾幀接縫無痕但較不像；comfy-cli 讀不了 0.36.0 的 i2v 範本改走 `POST /prompt`；新增 `models/qwen-image-edit.md`（guide v0.14）
 
 ## 目標與路線圖
 
