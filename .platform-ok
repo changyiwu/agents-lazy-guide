@@ -5,3 +5,4 @@
 # 而指南就是教他們用 powershell.exe 呼叫這支。5.1 會把無 BOM 的 UTF-8 當成 ANSI 讀，
 # 中文全部變亂碼、腳本在 parse 階段就失敗——所以這裡的 BOM 是必要的，不是遺毒。
 scripts/install.ps1
+scripts/validate.ps1

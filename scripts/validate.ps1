@@ -314,7 +314,7 @@ if ($Config.PSObject.Properties.Name -contains 'repoRules') {
         $EntryFile = $Config.repoRules.entryFile
     }
 }
-foreach ($required in @($EntryFile, 'README.md', 'agents.md', 'TEMPLATE.md', 'LICENSE', '.gitattributes', 'scripts/install.ps1')) {
+foreach ($required in @($EntryFile, 'README.md', 'AGENTS.md', 'TEMPLATE.md', 'LICENSE', '.gitattributes', 'scripts/install.ps1')) {
     if (-not (Test-Path -LiteralPath (Resolve-RepoPath $required))) {
         Add-Failure "缺少必要檔案：$required"
     }
