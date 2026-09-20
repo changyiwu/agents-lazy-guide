@@ -1,0 +1,27 @@
+name: validate
+
+# 在 Windows 上用 Windows PowerShell 5.1 跑（shell: powershell）。
+# 這同時驗證了腳本的 5.1 相容性 —— install.ps1 宣告 #Requires -Version 5.1，
+# 是為了讓沒裝 PowerShell 7 的電腦也能直接跑，CI 必須用同一個版本把關。
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: 驗證結構、命名、編碼與文件一致性
+        shell: powershell
+        run: .\scripts\validate.ps1

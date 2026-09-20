@@ -29,6 +29,7 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 - 2026-09-16：#07 補上「產出物內嵌完整工作流程」——PNG 的 `tEXt`、MP4 的容器 metadata 都帶提示詞全文與模型 seed，發布前要提醒使用者清除（guide v0.12）
 - 2026-09-16：#07 實測 MiniMax H3 **Ref2VA**（PC-YI-FY 下載全套 ref2va 五檔約 44 GB）——一張人物照＋文字就能把人放進全新場景；4 步 turbo LoRA 會崩、深度與機位由 seed 決定、特效要寫起點路徑終點，寫入 `models/minimax-h3.md`（guide v0.13）
 - 2026-09-18：#07 實測 H3 **多段短片**（四段約 23 秒）——定妝照、去人的場景版、參考聲音統一各段；大特寫會禿、雙人對話推近擋不住、視線約 4 秒衰減、段落接點要換機位；FL2VA 首尾幀接縫無痕但較不像；comfy-cli 讀不了 0.36.0 的 i2v 範本改走 `POST /prompt`；新增 `models/qwen-image-edit.md`（guide v0.14）
+- 2026-09-20：#07 實測 H3 **參考影片**（四組對照，含刪掉機位句的 C／D）——不控制機位、不搬運內容（不必去人）、成本 3.5 倍，只有風格偏移；`ref_video_0` 型別是 IMAGE 要 `LoadVideo → GetVideoComponents` 轉接；「Blender 灰模 previz」是 Seedance 2.5 的玩法不可搬用（guide 步驟九加警告，版號未升）
 
 ## 目標與路線圖
 
@@ -60,6 +61,8 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 
 ```
 agents-lazy-guide/
+├── .github/workflows/
+│   └── validate.yml     CI：每次 push 與 PR 用 Windows PowerShell 5.1 跑 validate.ps1
 ├── README.md            人看的索引
 ├── INSTALL.md           AI Agent 讀的安裝入口（★ 不可改名為 SKILL.md）
 ├── agents.json          ★ 四個 agent 的差異表，唯一的差異來源
@@ -87,7 +90,8 @@ agents-lazy-guide/
 │   ├── 07-comfyui/SKILL.md ＋ models/（各模型筆記，隨技能安裝）
 │   └── install-all/SKILL.md
 └── scripts/
-    └── install.ps1      讀 agents.json，裝到各 agent 的正確目錄
+    ├── install.ps1      讀 agents.json，裝到各 agent 的正確目錄
+    └── validate.ps1     讀 agents.json，驗證結構、命名、編碼與三處清單一致（-Strict 連警告都當失敗）
 ```
 
 ## 同步層級（本專案初始化至第三層級）
@@ -171,7 +175,10 @@ agents-lazy-guide/
 - 修改前先確認計畫，優先保留原有資料結構
 - 改動安裝腳本後，**先用沙箱實測**（複製 `scripts/` + `skills/` 到暫存區、
   改寫 `agents.json` 的 `detectDir`/`skillsDir` 指向假目錄再跑），不要直接動真實技能目錄
-- **`scripts/install.ps1` 必須保留 UTF-8 BOM。** 它宣告 `#Requires -Version 5.1`，
+- **改動 repo 後跑 `scripts/validate.ps1`**（新增主題、改 `SKILL.md`、改 `agents.json` 都算）。
+  CI 每次 push 與 PR 都會跑同一支，本機先跑可省一輪來回。腳本一切讀 `agents.json`，
+  不硬編碼任何主題名或 agent 名，**新增主題不必改它**；`-Strict` 會把警告也當失敗
+- **`scripts/*.ps1` 必須保留 UTF-8 BOM**（`validate.ps1` 會擋下沒 BOM 的）。它們宣告 `#Requires -Version 5.1`，
   好讓沒裝 PowerShell 7 的電腦也能直接跑；但 Windows PowerShell 5.1 讀「無 BOM 的 UTF-8」
   會當成 ANSI，檔內中文全部亂碼、解析階段就失敗。用編輯器另存時要確認 BOM 沒被拿掉
 - **全域技能目錄不在雲端硬碟，每台電腦都要各自跑一次安裝。** 換電腦接手時先確認
