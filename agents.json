@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-10",
+  "updated": "2026-09-21",
   "description": "四個 AI Agent 的懶人包差異表。這是整個 repo 唯一記錄 agent 差異的地方，其餘文件一律通用。",
 
   "skillDiscovery": {
@@ -118,6 +118,14 @@
       "guide": "guides/07-連接-ComfyUI.md",
       "skillDir": "skills/07-comfyui",
       "status": "初版（生圖、MiniMax H3 影片、Music 3 音樂已實測）"
+    },
+    {
+      "no": "08",
+      "slug": "blender",
+      "title": "連接 Blender 做 3D 建模",
+      "guide": "guides/08-連接-Blender.md",
+      "skillDir": "skills/08-blender",
+      "status": "初版（Windows Blender 5.2.2 煙霧測試）"
     },
     {
       "no": "--",

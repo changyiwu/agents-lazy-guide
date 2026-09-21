@@ -55,10 +55,11 @@ powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent claude -To
 | 05 | 生圖 | [教學](guides/05-生圖.md) | `skills/05-draw`（含 `draw.py`） |
 | 06 | 連接 Cloudflare | [教學](guides/06-連接-Cloudflare.md) | `skills/06-cloudflare` |
 | 07 | 連接 ComfyUI | [教學](guides/07-連接-ComfyUI.md) | `skills/07-comfyui` |
+| 08 | 連接 Blender 做 3D 建模 | [教學](guides/08-連接-Blender.md) | `skills/08-blender` |
 | — | 一次安裝全部 | — | `skills/install-all` |
 
-> 六個主題全部搬移完成，2026-08-18 新增 #06 Cloudflare，2026-09-10 新增 #07 ComfyUI。
-> 原本四份懶人包共 23 份教學 MD、26 份 SKILL.md，現在是 8 份教學 + 9 份技能。
+> 六個原始主題全部搬移完成，2026-08-18 新增 #06 Cloudflare、2026-09-10 新增 #07 ComfyUI、
+> 2026-09-21 新增 #08 Blender。現在是 9 份教學 + 10 份技能。
 
 ---
 
@@ -94,7 +95,7 @@ agents-lazy-guide/
 
 技能名稱四個 agent 相同，統一用 `agent-` 前綴：`agent-github`、`agent-obsidian`、
 `agent-firebase`、`agent-draw`、`agent-env-setup`、`agent-gemini-notebook`、`agent-cloudflare`、
-`agent-comfyui`、`agent-install-all`。
+`agent-comfyui`、`agent-blender`、`agent-install-all`。
 
 > **重點是「四家同名」，不是「有沒有前綴」。** OpenCode 會同時掃描 `~/.claude/skills`
 > 與 `~/.agents/skills`，所以用**各自**的前綴（`claude-github`／`codex-github`／
@@ -111,7 +112,8 @@ agents-lazy-guide/
 ## 目前狀態：已安裝（2026-08-02）
 
 六個主題全部搬移完成，並已切換到四個 agent 的全域目錄。
-**#07 ComfyUI 於 2026-09-10 新增。全域技能目錄不在雲端硬碟裡，每台電腦都要各自跑一次安裝或同步技能**（見下方重新安裝指令）。
+**#07 ComfyUI 於 2026-09-10 新增，#08 Blender 於 2026-09-21 新增。全域技能目錄不在雲端硬碟裡，
+每台電腦都要各自跑一次安裝或同步技能**（見下方重新安裝指令）。
 舊 repo 留下的 24 個各自前綴技能（`claude-*`／`codex-*`／`opencode-*`／`antigravity-*`）已清除。
 
 重新安裝或更新：

@@ -30,6 +30,7 @@ Claude Code / Codex / OpenCode / Antigravity 四個 agent，不用再維護四�
 - 2026-09-16：#07 實測 MiniMax H3 **Ref2VA**（PC-YI-FY 下載全套 ref2va 五檔約 44 GB）——一張人物照＋文字就能把人放進全新場景；4 步 turbo LoRA 會崩、深度與機位由 seed 決定、特效要寫起點路徑終點，寫入 `models/minimax-h3.md`（guide v0.13）
 - 2026-09-18：#07 實測 H3 **多段短片**（四段約 23 秒）——定妝照、去人的場景版、參考聲音統一各段；大特寫會禿、雙人對話推近擋不住、視線約 4 秒衰減、段落接點要換機位；FL2VA 首尾幀接縫無痕但較不像；comfy-cli 讀不了 0.36.0 的 i2v 範本改走 `POST /prompt`；新增 `models/qwen-image-edit.md`（guide v0.14）
 - 2026-09-20：#07 實測 H3 **參考影片**（四組對照，含刪掉機位句的 C／D）——不控制機位、不搬運內容（不必去人）、成本 3.5 倍，只有風格偏移；`ref_video_0` 型別是 IMAGE 要 `LoadVideo → GetVideoComponents` 轉接；「Blender 灰模 previz」是 Seedance 2.5 的玩法不可搬用（guide 步驟九加警告，版號未升）
+- 2026-09-21：新增 #08 連接 Blender；第一版供 Codex／Claude Code 以本機 Blender 背景模式執行 `bpy` 建模腳本，不控制開啟中的未儲存場景
 
 ## 目標與路線圖
 
@@ -78,7 +79,8 @@ agents-lazy-guide/
 │   ├── 04-連接-Firebase.md
 │   ├── 05-生圖.md
 │   ├── 06-連接-Cloudflare.md
-│   └── 07-連接-ComfyUI.md
+│   ├── 07-連接-ComfyUI.md
+│   └── 08-連接-Blender.md
 ├── skills/              agent 執行的精簡步驟，一主題一份
 │   ├── 00-env-setup/SKILL.md
 │   ├── 01-gemini-notebook/SKILL.md
@@ -88,6 +90,7 @@ agents-lazy-guide/
 │   ├── 05-draw/SKILL.md ＋ draw.py
 │   ├── 06-cloudflare/SKILL.md ＋ references/（D1、自動部署路線 B，隨技能安裝）
 │   ├── 07-comfyui/SKILL.md ＋ models/（各模型筆記，隨技能安裝）
+│   ├── 08-blender/SKILL.md ＋ scripts/、templates/、references/（背景建模）
 │   └── install-all/SKILL.md
 └── scripts/
     ├── install.ps1      讀 agents.json，裝到各 agent 的正確目錄
@@ -146,6 +149,8 @@ agents-lazy-guide/
   `SKILL.md` 只留通用流程與〈模型筆記〉索引表。新增模型就新增一份筆記並補進索引表，不要再寫進 `SKILL.md` 本文。
   筆記隨技能安裝（`install.ps1`、`sync-skills` 都遞迴複製），可以放執行必需的內容；給人看的原因與量測方式仍放 guide。
   這是 `TEMPLATE.md`〈附屬檔〉通則的一例（#06 的 `references/` 同理）。
+- **#08 Blender 第一版固定走已安裝的 Blender 執行檔＋背景 `bpy` 腳本**，不以 `pip install bpy` 取代，
+  不控制目前開啟中的未儲存場景。原始 `.blend` 只當輸入、結果另存專案 `blender/`；runner 預設停用 autoexec。
 - **#06 預設是純靜態站，D1 只在使用者要求存資料時才做，不主動提議。**
   **建立與正式資料庫遷移由 agent 在使用者當下同意後執行**（不算對外發布，故不比照 `wrangler deploy`）；
   **刪除資料庫與 time-travel 還原一律由使用者自己執行**，也不得改用 MCP 的刪除工具。
