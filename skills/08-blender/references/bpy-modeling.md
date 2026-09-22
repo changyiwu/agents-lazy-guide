@@ -32,6 +32,14 @@
 - 先輸出場景盤點：物件、集合、材質、連結資產、單位、渲染引擎與相機，再決定修改方式。
 - 若依名稱找不到唯一目標就停下，不可猜一個最像的物件直接修改。
 
+## MCP 即時修改程式碼
+
+- 每支修正腳本只負責一個可描述的變更，並能在執行前檢查必要物件；不要把整個模型重建塞進每一輪。
+- 程式碼由官方 MCP 在已開啟的 Blender session 直接執行，不可清空整個場景，也不要依賴命令列 `sys.argv`。
+- 每個獨立 MCP 程式碼片段都要明確 `import bpy`；執行 namespace 不保證預先注入 Blender 模組。
+- 使用穩定名稱或 `agent_id` 自訂屬性定位物件；找不到唯一目標時拋出錯誤，讓 MCP result 保留 traceback。
+- 需要大量拓樸運算時，先存 checkpoint；修改後更新 view layer，讓下一次 inspect 與 render 看到最新結果。
+
 ## 驗收
 
 - `report.json` 至少包含 Blender 版本、輸出路徑、render engine、物件類型、位置與 dimensions。

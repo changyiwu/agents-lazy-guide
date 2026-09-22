@@ -59,7 +59,7 @@ powershell -ExecutionPolicy Bypass -File "scripts/install.ps1" -Agent claude -To
 | — | 一次安裝全部 | — | `skills/install-all` |
 
 > 六個原始主題全部搬移完成，2026-08-18 新增 #06 Cloudflare、2026-09-10 新增 #07 ComfyUI、
-> 2026-09-21 新增 #08 Blender。現在是 9 份教學 + 10 份技能。
+> 2026-09-21 新增 #08 Blender，2026-09-22 升級為 Blender Lab 官方 MCP＋背景 runner 雙軌。現在是 9 份教學 + 10 份技能。
 
 ---
 

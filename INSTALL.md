@@ -40,7 +40,7 @@
 | 05 | `skills/05-draw` | `agent-draw` | 生圖（內建或 gpt-image-2），含 `draw.py` | uv |
 | 06 | `skills/06-cloudflare` | `agent-cloudflare` | Wrangler 登入、部署靜態網站到 Workers，可選加 D1 資料庫與 API | Node.js 20+、Cloudflare 帳號 |
 | 07 | `skills/07-comfyui` | `agent-comfyui` | 用 comfy-cli 操作本機 ComfyUI：改參數、送出、取回生成結果 | uv、已安裝的 ComfyUI、NVIDIA 顯卡 8GB 以上 |
-| 08 | `skills/08-blender` | `agent-blender` | 用本機 Blender 與 bpy 建模、渲染及匯出 3D 場景 | uv、已安裝的 Blender 4.2 以上 |
+| 08 | `skills/08-blender` | `agent-blender` | 用 Blender Lab 官方 MCP 即時建模，並以 bpy runner 批次重現 | uv、已安裝的 Blender 5.1 以上 |
 | — | `skills/install-all` | `agent-install-all` | 一次安裝全部 | 無 |
 
 以 Claude Code 為例，02 安裝後就是 `~/.claude/skills/agent-github/SKILL.md`。

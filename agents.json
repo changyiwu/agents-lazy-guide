@@ -125,7 +125,7 @@
       "title": "連接 Blender 做 3D 建模",
       "guide": "guides/08-連接-Blender.md",
       "skillDir": "skills/08-blender",
-      "status": "初版（Windows Blender 5.2.2 煙霧測試）"
+      "status": "v0.3（Windows Blender 5.2.2：官方 MCP 已註冊；背景 runner 已測）"
     },
     {
       "no": "--",
