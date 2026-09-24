@@ -2,7 +2,7 @@
 title: 'AI Agent 懶人包 #06：連接 Cloudflare'
 date: '2026-09-14'
 type: 懶人包
-version: v0.3
+version: v0.4
 status: 初版（部署流程源自實際專案遷移；D1 段落依官方文件撰寫；皆尚未以技能形式重跑）
 tags:
   - 懶人包
@@ -89,8 +89,8 @@ tags:
 
 ## 執行原則（給 AI Agent）
 
-- **部署是對外發布行為。** 每一次 `wrangler deploy` 都要取得使用者當下的明確同意，
-  不可因為前面同意過就自行再部署。
+- **正式部署或推送到會自動部署的分支都是對外發布。** 先確認帳號、Worker、分支、變更範圍與測試結果；
+  取得使用者涵蓋本次發布的明確授權後，agent 可執行 `wrangler deploy` 或 push，不把先前一次授權用於無關變更。
 - **互動式登入不可代跑。** `wrangler login` 需要瀏覽器 OAuth 與互動式終端，
   請使用者自己執行，不要改用「請把 API Token 貼給我」的做法。
 - **不要主動建立或刪除遠端資源**：自訂網域、DNS 記錄、KV、R2、其他 Worker，一律不碰。
@@ -284,7 +284,7 @@ npx wrangler dev
 ## 步驟八：首次部署
 
 > ⚠️ **這一步會把網站公開到網際網路上。** 上線前先確認內容不含個資、測試資料、未授權素材。
-> agent 必須取得使用者當下的明確同意，且**由使用者自己執行部署指令**。
+> agent 必須取得使用者對本次發布的明確授權；授權後可由 agent 執行部署指令。
 
 ```bash
 npm run build
@@ -294,7 +294,7 @@ npm run build
 npx wrangler deploy
 ```
 
-成功後終端機會印出網址。用瀏覽器打開確認。
+成功後終端機會印出網址。agent 核對部署版本並打開網站確認；使用者想自行操作時也可直接執行上述指令。
 
 > Windows PowerShell 5.1 不支援 `&&`，兩行要分開跑。
 
@@ -310,9 +310,9 @@ npx wrangler deploy
 | | A. Workers Builds（預設） | B. GitHub Actions |
 |---|---|---|
 | 你要做的 | 在後台授權 Cloudflare 的 GitHub App，**每個新專案都要點一次** | 產一顆 API Token、貼一次 secret |
-| Agent 能代做的 | 幾乎沒有（授權是 OAuth，沒有 CLI 對應） | 除了貼 secret 以外全部 |
+| Agent 能代做的 | GitHub 連結授權仍由使用者操作；連上後可依授權 push 並查核部署 | 除了貼 secret 以外全部 |
 | 設定放哪 | Cloudflare 後台，之後要改都得進去點 | repo 裡的 `.yml`，進版控、可 review |
-| 部署前能不能擋測試 | 不行 | **可以**，測試沒過就不上線 |
+| 部署前能不能擋測試 | 可以，建置指令先跑測試 | **可以**，測試沒過就不上線 |
 | 有沒有長期憑證 | 沒有 | 有一顆 API Token |
 
 **沒在用密碼管理器的話建議選 A。** B 的 token 只會完整顯示一次，沒存下來的話，
@@ -338,7 +338,7 @@ secret store 裡，你不需要再看到它，只有「要用到第二個 repo�
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy`（預設值，不用改） |
 
-5. 儲存後 push 一個 commit，就會觸發第一次自動建置
+5. 儲存後 push 一個 commit，就會觸發第一次自動建置；這次 push 若由 agent 執行，先取得涵蓋發布的授權
 
 **驗證方式**：GitHub 上該 commit 會出現名為 `Workers Builds: <你的 Worker 名>` 的檢查項目，
 狀態變成 success 就代表成功。也可以用 `npx wrangler deployments list` 看有沒有新版本。
@@ -346,7 +346,8 @@ secret store 裡，你不需要再看到它，只有「要用到第二個 repo�
 > **Node 版本不用另外設定**：Workers Builds 預設用 Node.js 24。
 > 需要指定版本時，加一個 `.node-version` 檔或設 `NODE_VERSION` 建置環境變數。
 
-接上之後，「部署」這件事就從你手上移交給 CI 了：push 就上線，不用再手動跑 `wrangler deploy`。
+接上之後，push 到 production branch 就會由 Cloudflare 自動建置與部署，不必對同一批變更再手動跑 `wrangler deploy`。
+agent 可在取得本次發布授權後 push，並確認建置成功、正式網站已更新；自動建置失敗時不逕自改走手動部署。
 記得同步更新專案文件，不要留著「要手動部署」的過期說明。
 
 ### 路線 B：GitHub Actions
@@ -720,6 +721,7 @@ D1 免費方案的額度：
 | v0.1 | 2026-08-18 | 初版。流程與所有踩坑紀錄來自一次實際的網站遷移（Netlify → Cloudflare Workers，含首次部署與接上 Workers Builds），尚未以技能形式重跑驗證 |
 | v0.2 | 2026-09-14 | 新增步驟十「加上 D1 資料庫與 API」：建立資料庫、遷移檔、`run_worker_first` 分流的 API Worker、本機與正式環境的套用順序。確立同意點：建立與正式遷移由 agent 在當下同意後執行（Wrangler 在非互動環境會自動跳過自己的確認），刪除與還原由使用者執行；建立資源與改結構走 Wrangler、MCP 只用來查看（兩者授權帳號可能不同）；D1 不主動提議。補免費額度、復原與常見問題。依官方文件撰寫，尚未實測 |
 | v0.3 | 2026-09-15 | 教學內容不變，**技能結構調整**：只在特定情況才走的內容從 `SKILL.md` 移到技能資料夾的附屬檔——D1（步驟十）→ `references/d1.md`，自動部署路線 B 與「從 B 換回 A」→ `references/github-actions.md`，隨技能安裝。`SKILL.md` 由 129 行降為 106 行，保留路線取捨表、路線 A、D1 兩個同意點與全部安全規則，並加上附屬檔索引表。依據是同日在 PC-YI-SL 實測 Codex、OpenCode、Antigravity 都讀得到技能資料夾裡的附屬檔（通則寫入 `TEMPLATE.md`〈附屬檔〉） |
+| v0.4 | 2026-09-24 | Cloudflare 正式部署改為使用者授權本次發布後可由 agent 執行；Workers Builds 連接 GitHub 後，推送到 production branch 可自動部署，agent 的 push 同樣要有發布授權並查核結果。同一批變更不重複手動部署。 |
 
 ---
 
